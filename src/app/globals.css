@@ -1,0 +1,320 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  /* В Telegram берём стабильную высоту окна мини-аппа, в браузере — динамическую высоту экрана */
+  --app-h: var(--tg-viewport-stable-height, 100dvh);
+
+  /* Системные цвета iOS */
+  --ios-blue: #007aff;
+  --ios-green: #34c759;
+  --ios-red: #ff3b30;
+  --ios-pink: #ff2d55;
+  --ios-yellow: #ffcc00;
+  --ios-orange: #ff9500;
+  --ios-purple: #af52de;
+  --ios-teal: #30b0c7;
+
+  /* Нейтральные заливки iOS */
+  --fill-1: #f2f2f7;
+  --fill-2: #e5e5ea;
+  --fill-3: #d1d1d6;
+  --label: #000000;
+  --label-2: #3c3c43;
+  --label-3: #8e8e93;
+
+  /* Тема по умолчанию — светлая, как в макете */
+  --app-bg: #f2f2f7;
+  --app-bg-image:
+    radial-gradient(58% 42% at 4% 0%, rgba(0, 122, 255, 0.07) 0%, transparent 62%),
+    radial-gradient(52% 38% at 100% 4%, rgba(255, 45, 85, 0.06) 0%, transparent 60%);
+  --on-bg: #000000;
+  --on-bg-dim: #8e8e93;
+  --card-bg: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.06);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px -12px rgba(0, 0, 0, 0.16);
+  --chip-bg: #007aff;
+  --chip-fg: #ffffff;
+  --segment-bg: #e9e9ef;
+}
+
+[data-theme="bitrix"] {
+  --app-bg: #0b4ea2;
+  --app-bg-image:
+    radial-gradient(70% 55% at 12% 0%, rgba(125, 211, 252, 0.4) 0%, transparent 62%),
+    radial-gradient(85% 60% at 50% 108%, rgba(23, 37, 84, 0.7) 0%, transparent 72%),
+    linear-gradient(180deg, #1272d4 0%, #0b4ea2 52%, #093a7a 100%);
+  --on-bg: #ffffff;
+  --on-bg-dim: rgba(226, 240, 255, 0.78);
+  --card-bg: #ffffff;
+  --card-border: rgba(255, 255, 255, 0.5);
+  --card-shadow: 0 14px 34px -14px rgba(4, 30, 70, 0.55);
+  --chip-bg: #ffffff;
+  --chip-fg: #0b4ea2;
+  --segment-bg: rgba(255, 255, 255, 0.22);
+}
+
+[data-theme="graphite"] {
+  --app-bg: #171c26;
+  --app-bg-image:
+    radial-gradient(65% 50% at 10% 0%, rgba(99, 102, 241, 0.26) 0%, transparent 62%),
+    linear-gradient(180deg, #273040 0%, #171c26 58%, #10141c 100%);
+  --on-bg: #f8fafc;
+  --on-bg-dim: rgba(226, 232, 240, 0.68);
+  --card-bg: #ffffff;
+  --card-border: rgba(255, 255, 255, 0.5);
+  --card-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.6);
+  --chip-bg: #ffffff;
+  --chip-fg: #1e293b;
+  --segment-bg: rgba(255, 255, 255, 0.16);
+}
+
+[data-theme="coral"] {
+  --app-bg: #fff1e8;
+  --app-bg-image:
+    radial-gradient(62% 48% at 6% 0%, rgba(253, 186, 116, 0.55) 0%, transparent 68%),
+    radial-gradient(55% 42% at 100% 8%, rgba(244, 114, 182, 0.35) 0%, transparent 65%);
+  --on-bg: #431407;
+  --on-bg-dim: rgba(124, 45, 18, 0.65);
+  --card-bg: #ffffff;
+  --card-border: rgba(255, 255, 255, 0.8);
+  --card-shadow: 0 12px 32px -14px rgba(124, 45, 18, 0.25);
+  --chip-bg: #431407;
+  --chip-fg: #ffffff;
+  --segment-bg: rgba(124, 45, 18, 0.12);
+}
+
+html,
+body {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
+.app-screen {
+  min-height: var(--app-h);
+  height: var(--app-h);
+}
+
+@media (max-height: 620px) {
+  .app-screen {
+    height: auto;
+  }
+}
+
+body {
+  background-color: var(--app-bg);
+  background-image: var(--app-bg-image);
+  background-attachment: fixed;
+  color: var(--label);
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+  transition: background-color 0.35s ease;
+}
+
+/* ───── Карточки в стиле iOS ───── */
+.glass,
+.glass-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+}
+
+/* Карточка с толстой цветной рамкой, как в макете */
+.frame-card {
+  background: var(--frame-fill, #fff);
+  border: 3px solid var(--frame-color, var(--ios-blue));
+  border-radius: 30px;
+  box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.3);
+}
+
+/* Крупные плитки-виджеты: squircle и плотный цвет */
+.tile {
+  border-radius: 30px;
+  box-shadow: 0 10px 24px -12px var(--tile-shadow, rgba(0, 0, 0, 0.35));
+  transition: transform 0.14s ease;
+}
+
+.tile:active {
+  transform: scale(0.97);
+}
+
+.on-bg {
+  color: var(--on-bg);
+}
+
+.on-bg-dim {
+  color: var(--on-bg-dim);
+}
+
+.chip-accent {
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+}
+
+.segment-track {
+  background: var(--segment-bg);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Крупные числа: плотные, с табличными цифрами */
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-sheet-up {
+  animation: sheet-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* ───── Мастер создания внутри таймлайна ───── */
+.wizard-surface {
+  background:
+    radial-gradient(80% 60% at 100% 0%, rgba(255, 214, 224, 0.9) 0%, transparent 70%),
+    radial-gradient(70% 55% at 0% 100%, rgba(255, 237, 213, 0.85) 0%, transparent 70%),
+    #ffffff;
+}
+
+@keyframes wizard-reveal {
+  from {
+    clip-path: circle(0% at var(--ox, 90%) var(--oy, 95%));
+  }
+  to {
+    clip-path: circle(150% at var(--ox, 90%) var(--oy, 95%));
+  }
+}
+
+@keyframes wizard-hide {
+  from {
+    clip-path: circle(150% at var(--ox, 90%) var(--oy, 95%));
+  }
+  to {
+    clip-path: circle(0% at var(--ox, 90%) var(--oy, 95%));
+  }
+}
+
+.wizard-reveal {
+  animation: wizard-reveal 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) both;
+}
+
+.wizard-hide {
+  animation: wizard-hide 0.34s cubic-bezier(0.5, 0, 0.75, 0) both;
+}
+
+@keyframes step-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes step-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.step-fwd {
+  animation: step-in-right 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.step-back {
+  animation: step-in-left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes chip-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.chip-pop {
+  animation: chip-pop 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.step-title,
+.crumb {
+  animation: fade-in 0.25s ease-out both;
+}
+
+@keyframes block-born {
+  0% {
+    transform: scale(0.6);
+    box-shadow: 0 0 0 0 rgba(255, 45, 85, 0.6);
+  }
+  45% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(255, 45, 85, 0);
+  }
+}
+
+.block-born {
+  animation: block-born 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.15s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wizard-reveal,
+  .wizard-hide,
+  .step-fwd,
+  .step-back,
+  .chip-pop,
+  .block-born {
+    animation-duration: 0.01ms !important;
+  }
+}
