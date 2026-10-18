@@ -21,7 +21,7 @@ export default function BottomNav({
   debtCount: number;
 }) {
   return (
-    <nav className="segment-track shrink-0 rounded-full p-1">
+    <nav data-tutorial="bottom-nav" className="segment-track shrink-0 rounded-full p-1">
       <ul className="flex items-stretch gap-1">
         {TABS.map(({ key, label }) => {
           const active = tab === key;
