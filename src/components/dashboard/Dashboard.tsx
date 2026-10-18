@@ -141,18 +141,22 @@ export default function DayTab({
 
       <div className="grid shrink-0 grid-cols-2 gap-2.5 empty:hidden">
         {prefs.income && (
-          <IncomeWidget
-            earned={earnedDay}
-            plan={DAILY_GOAL}
-            label={isToday ? "сегодня" : fmtShortDate(day)}
-            onOpen={() => setPanel("income")}
-          />
+          <div data-tutorial="income-widget" className="flex flex-col">
+            <IncomeWidget
+              earned={earnedDay}
+              plan={DAILY_GOAL}
+              label={isToday ? "сегодня" : fmtShortDate(day)}
+              onOpen={() => setPanel("income")}
+            />
+          </div>
         )}
         {prefs.next && (
-          <NextWindowWidget isToday={isToday} now={now} gap={nextGap} onOpen={() => setPanel("next")} />
+          <div data-tutorial="next-window-widget" className="flex flex-col">
+            <NextWindowWidget isToday={isToday} now={now} gap={nextGap} onOpen={() => setPanel("next")} />
+          </div>
         )}
         {prefs.reminders && (
-          <div className="col-span-2">
+          <div data-tutorial="reminders-widget" className="col-span-2">
             <RemindersWidget
               reminders={reminders}
               onOpen={() => setPanel("reminders")}
@@ -163,7 +167,7 @@ export default function DayTab({
       </div>
 
       {/* Таймлайн забирает всё оставшееся место экрана */}
-      <div ref={timelineRef} className="flex min-h-0 flex-1 flex-col">
+      <div ref={timelineRef} data-tutorial="timeline-widget" className="flex min-h-0 flex-1 flex-col">
         <TimelineWidget
           day={day}
           sessions={daySessions}

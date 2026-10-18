@@ -321,6 +321,7 @@ export default function TimelineWidget({
         <button
           type="button"
           onClick={onAdd}
+          data-tutorial="timeline-add-btn"
           aria-label="Новая тренировка"
           className="grid h-[58px] w-[58px] shrink-0 place-items-center rounded-full text-white transition active:scale-90"
           style={{

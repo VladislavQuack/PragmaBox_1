@@ -55,6 +55,7 @@ interface SettingsPanelProps {
   onSeed: () => void;
   theme: ThemeId;
   onTheme: (t: ThemeId) => void;
+  onStartTutorial?: () => void;
   // Инструкции по боту и деплою видны только владельцу приложения
   showGuides?: boolean;
 }
@@ -71,10 +72,36 @@ export default function SettingsPanel({
   onSeed,
   theme,
   onTheme,
+  onStartTutorial,
   showGuides = false,
 }: SettingsPanelProps) {
   return (
     <div className="space-y-5 pb-4">
+      {onStartTutorial && (
+        <section className="rounded-3xl p-4 bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/20">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <span className="inline-block rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold tracking-wide uppercase">
+                Для интервью и демонстрации
+              </span>
+              <h3 className="mt-1.5 text-base font-bold">Обучающий тур</h3>
+              <p className="mt-1 text-xs leading-relaxed text-sky-100">
+                Пошаговый интерактивный гид с подсветкой кнопок, таймлайна и фич для клиентов.
+              </p>
+            </div>
+            <span className="text-2xl">💡</span>
+          </div>
+          <button
+            type="button"
+            onClick={onStartTutorial}
+            className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-2.5 text-sm font-bold text-sky-600 shadow-sm active:scale-95 transition"
+          >
+            <span>Пройти тур по приложению</span>
+            <span>→</span>
+          </button>
+        </section>
+      )}
+
       <section className="space-y-2">
         <p className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Фон приложения</p>
         <div className="grid grid-cols-2 gap-2">
