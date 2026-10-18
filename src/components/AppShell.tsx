@@ -16,6 +16,7 @@ import FinanceTab, { collectDebtors } from "@/components/finance/FinanceTab";
 import ClientsTab from "@/components/clients/ClientsTab";
 import ClientDetail from "@/components/clients/ClientDetail";
 import SettingsPanel, { useWidgetPrefs } from "@/components/dashboard/SettingsPanel";
+import AppTutorial from "@/components/tutorial/AppTutorial";
 import { post } from "@/lib/client-api";
 import { themeDef, useTheme } from "@/lib/theme";
 
@@ -24,6 +25,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   const [tab, setTab] = useState<Tab>("day");
   const [openClientId, setOpenClientId] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [prefs, setPrefs] = useWidgetPrefs();
   const [theme, setTheme] = useTheme();
@@ -131,16 +133,18 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
     <main className="app-screen mx-auto flex w-full max-w-md flex-col gap-2.5 px-4 pb-[max(env(safe-area-inset-bottom),10px)] pt-[max(env(safe-area-inset-top),10px)]">
       <header className="flex shrink-0 items-center justify-between gap-2">
         {tab === "day" ? (
-          <DateSwitcher
-            day={day}
-            isToday={isToday}
-            onShift={(n) => {
-              const next = dayKey(addDays(day, n));
-              data.setViewKey(next === todayKey ? null : next);
-            }}
-            onPick={(key) => data.setViewKey(key === todayKey ? null : key)}
-            onToday={() => data.setViewKey(null)}
-          />
+          <div data-tutorial="date-switcher" className="flex-1 min-w-0">
+            <DateSwitcher
+              day={day}
+              isToday={isToday}
+              onShift={(n) => {
+                const next = dayKey(addDays(day, n));
+                data.setViewKey(next === todayKey ? null : next);
+              }}
+              onPick={(key) => data.setViewKey(key === todayKey ? null : key)}
+              onToday={() => data.setViewKey(null)}
+            />
+          </div>
         ) : (
           <h1 className="on-bg flex-1 truncate text-[26px] font-bold tracking-[-0.02em]">
             {tab === "finance" ? "Финансы" : "Клиенты"}
@@ -233,8 +237,20 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
           theme={theme}
           onTheme={setTheme}
           showGuides={showGuides}
+          onStartTutorial={() => {
+            setSettingsOpen(false);
+            setTab("day");
+            // Небольшая задержка, чтобы шторка закрылась и открылся тур
+            setTimeout(() => setTutorialOpen(true), 250);
+          }}
         />
       </Sheet>
+
+      <AppTutorial
+        open={tutorialOpen}
+        onClose={() => setTutorialOpen(false)}
+        onSwitchTab={setTab}
+      />
 
       {toast && (
         <div className="pointer-events-none fixed bottom-24 left-1/2 z-[60] -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/90 px-4 py-2 text-sm text-white shadow-lg">
