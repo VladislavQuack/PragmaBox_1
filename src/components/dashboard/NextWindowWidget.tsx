@@ -44,8 +44,8 @@ export default function NextWindowWidget({ isToday, now, gap, onOpen }: NextWind
     <button
       type="button"
       onClick={onOpen}
-      className="tile flex min-h-[clamp(132px,19dvh,168px)] flex-col justify-between p-3.5 text-left text-white"
-      style={{ background: "var(--ios-blue)", ["--tile-shadow" as string]: "rgba(0,122,255,0.45)" }}
+      className="tile tile-window-gradient flex min-h-[clamp(132px,19dvh,168px)] flex-col justify-between p-3.5 text-left text-white"
+      style={{ ["--tile-shadow" as string]: "rgba(2,132,199,0.45)" }}
     >
       <span className="text-[12px] font-semibold leading-tight opacity-95">{title}</span>
 

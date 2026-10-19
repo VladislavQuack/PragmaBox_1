@@ -20,8 +20,8 @@ export default function IncomeWidget({ earned, plan, label, onOpen }: IncomeWidg
       type="button"
       onClick={onOpen}
       aria-label={`Доход ${label}: ${earned} из ${plan} рублей`}
-      className="tile relative flex min-h-[clamp(132px,19dvh,168px)] items-center justify-center overflow-hidden p-3 text-white"
-      style={{ background: "var(--ios-green)", ["--tile-shadow" as string]: "rgba(52,199,89,0.45)" }}
+      className="tile tile-income-gradient relative flex min-h-[clamp(132px,19dvh,168px)] items-center justify-center overflow-hidden p-3 text-white"
+      style={{ ["--tile-shadow" as string]: "rgba(5,150,105,0.45)" }}
     >
       <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full p-1.5" aria-hidden="true">
         <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="8" />

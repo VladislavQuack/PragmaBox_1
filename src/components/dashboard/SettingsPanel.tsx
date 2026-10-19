@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { THEMES, type ThemeId } from "@/lib/theme";
-import { IconCheck } from "@/components/ui/icons";
 
 export interface WidgetPrefs {
   income: boolean;
@@ -53,8 +51,6 @@ interface SettingsPanelProps {
   prefs: WidgetPrefs;
   onChange: (p: WidgetPrefs) => void;
   onSeed: () => void;
-  theme: ThemeId;
-  onTheme: (t: ThemeId) => void;
   onStartTutorial?: () => void;
   // Инструкции по боту и деплою видны только владельцу приложения
   showGuides?: boolean;
@@ -70,68 +66,26 @@ export default function SettingsPanel({
   prefs,
   onChange,
   onSeed,
-  theme,
-  onTheme,
   onStartTutorial,
   showGuides = false,
 }: SettingsPanelProps) {
   return (
-    <div className="space-y-5 pb-4">
+    <div className="space-y-4 pb-4">
       {onStartTutorial && (
-        <section className="rounded-3xl p-4 bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/20">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <span className="inline-block rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold tracking-wide uppercase">
-                Для интервью и демонстрации
-              </span>
-              <h3 className="mt-1.5 text-base font-bold">Обучающий тур</h3>
-              <p className="mt-1 text-xs leading-relaxed text-sky-100">
-                Пошаговый интерактивный гид с подсветкой кнопок, таймлайна и фич для клиентов.
-              </p>
-            </div>
-            <span className="text-2xl">💡</span>
-          </div>
-          <button
-            type="button"
-            onClick={onStartTutorial}
-            className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-2.5 text-sm font-bold text-sky-600 shadow-sm active:scale-95 transition"
-          >
-            <span>Пройти тур по приложению</span>
-            <span>→</span>
-          </button>
-        </section>
+        <button
+          type="button"
+          onClick={onStartTutorial}
+          className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition active:scale-[0.98]"
+          style={{
+            background: "linear-gradient(135deg, #007aff 0%, #005bb5 100%)",
+          }}
+        >
+          <span>Пройти тур по приложению</span>
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-white/20 text-xs font-bold">
+            →
+          </span>
+        </button>
       )}
-
-      <section className="space-y-2">
-        <p className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Фон приложения</p>
-        <div className="grid grid-cols-2 gap-2">
-          {THEMES.map((t) => {
-            const active = theme === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => onTheme(t.id)}
-                className={`overflow-hidden rounded-2xl bg-white text-left shadow-sm transition active:scale-[0.97] ${
-                  active ? "ring-2 ring-sky-500" : ""
-                }`}
-              >
-                <span className="relative block h-16 w-full" style={{ background: t.swatch }}>
-                  {active && (
-                    <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-white text-sky-600 shadow">
-                      <IconCheck className="h-3 w-3" />
-                    </span>
-                  )}
-                </span>
-                <span className="block px-2.5 py-2">
-                  <span className="block text-sm font-semibold text-slate-900">{t.label}</span>
-                  <span className="block text-[11px] leading-tight text-slate-500">{t.hint}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
 
       <section className="space-y-2">
         <p className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Виджеты на дашборде</p>
