@@ -18,7 +18,7 @@ import ClientDetail from "@/components/clients/ClientDetail";
 import SettingsPanel, { useWidgetPrefs } from "@/components/dashboard/SettingsPanel";
 import AppTutorial from "@/components/tutorial/AppTutorial";
 import { post } from "@/lib/client-api";
-import { themeDef, useTheme } from "@/lib/theme";
+
 
 export default function AppShell({ showGuides = false }: { showGuides?: boolean }) {
   const data = useAppData();
@@ -28,7 +28,6 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [prefs, setPrefs] = useWidgetPrefs();
-  const [theme, setTheme] = useTheme();
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +39,8 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
       if (cancelled || !tg) return;
       tg.ready?.();
       tg.expand?.();
+      tg.setHeaderColor?.("#fff1e8");
+      tg.setBackgroundColor?.("#fff1e8");
 
       // Telegram знает точную высоту окна мини-аппа — используем её вместо 100dvh
       const applyViewport = () => {
@@ -56,14 +57,6 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
       offViewport?.();
     };
   }, []);
-
-  // Шапка Telegram перекрашивается вместе с темой
-  useEffect(() => {
-    const tg = telegramWebApp();
-    const color = themeDef(theme).tgColor;
-    tg?.setHeaderColor?.(color);
-    tg?.setBackgroundColor?.(color);
-  }, [theme]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -234,8 +227,6 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
           prefs={prefs}
           onChange={setPrefs}
           onSeed={seedDemo}
-          theme={theme}
-          onTheme={setTheme}
           showGuides={showGuides}
           onStartTutorial={() => {
             setSettingsOpen(false);
