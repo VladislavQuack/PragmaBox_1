@@ -100,36 +100,13 @@ body {
   transform: scale(0.97);
 }
 
-/* Мягкий переливающийся живой градиент (на GPU через background-position) */
-@keyframes fluid-gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
+/* Светлые статичные градиенты в стиле iOS (без анимации) */
 .tile-income-gradient {
-  background: linear-gradient(135deg, #10b981 0%, #059669 35%, #047857 70%, #10b981 100%);
-  background-size: 240% 240%;
-  animation: fluid-gradient 10s ease-in-out infinite;
+  background: linear-gradient(145deg, #5eead4 0%, #34d399 30%, #34c759 62%, #4cd964 100%);
 }
 
 .tile-window-gradient {
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 35%, #075985 70%, #0284c7 100%);
-  background-size: 240% 240%;
-  animation: fluid-gradient 10s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tile-income-gradient,
-  .tile-window-gradient {
-    animation: none !important;
-  }
+  background: linear-gradient(145deg, #7dd3fc 0%, #38bdf8 32%, #0a84ff 68%, #007aff 100%);
 }
 
 .on-bg {
