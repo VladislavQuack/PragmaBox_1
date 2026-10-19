@@ -16,72 +16,27 @@
   --ios-teal: #30b0c7;
 
   /* Нейтральные заливки iOS */
-  --fill-1: #f2f2f7;
-  --fill-2: #e5e5ea;
-  --fill-3: #d1d1d6;
-  --label: #000000;
-  --label-2: #3c3c43;
-  --label-3: #8e8e93;
+  --fill-1: #fff5ee;
+  --fill-2: #ffe7db;
+  --fill-3: #ffd5c2;
+  --label: #2c1206;
+  --label-2: #643825;
+  --label-3: #9b6c56;
 
-  /* Тема по умолчанию — светлая, как в макете */
-  --app-bg: #f2f2f7;
-  --app-bg-image:
-    radial-gradient(58% 42% at 4% 0%, rgba(0, 122, 255, 0.07) 0%, transparent 62%),
-    radial-gradient(52% 38% at 100% 4%, rgba(255, 45, 85, 0.06) 0%, transparent 60%);
-  --on-bg: #000000;
-  --on-bg-dim: #8e8e93;
-  --card-bg: #ffffff;
-  --card-border: rgba(0, 0, 0, 0.06);
-  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px -12px rgba(0, 0, 0, 0.16);
-  --chip-bg: #007aff;
-  --chip-fg: #ffffff;
-  --segment-bg: #e9e9ef;
-}
-
-[data-theme="bitrix"] {
-  --app-bg: #0b4ea2;
-  --app-bg-image:
-    radial-gradient(70% 55% at 12% 0%, rgba(125, 211, 252, 0.4) 0%, transparent 62%),
-    radial-gradient(85% 60% at 50% 108%, rgba(23, 37, 84, 0.7) 0%, transparent 72%),
-    linear-gradient(180deg, #1272d4 0%, #0b4ea2 52%, #093a7a 100%);
-  --on-bg: #ffffff;
-  --on-bg-dim: rgba(226, 240, 255, 0.78);
-  --card-bg: #ffffff;
-  --card-border: rgba(255, 255, 255, 0.5);
-  --card-shadow: 0 14px 34px -14px rgba(4, 30, 70, 0.55);
-  --chip-bg: #ffffff;
-  --chip-fg: #0b4ea2;
-  --segment-bg: rgba(255, 255, 255, 0.22);
-}
-
-[data-theme="graphite"] {
-  --app-bg: #171c26;
-  --app-bg-image:
-    radial-gradient(65% 50% at 10% 0%, rgba(99, 102, 241, 0.26) 0%, transparent 62%),
-    linear-gradient(180deg, #273040 0%, #171c26 58%, #10141c 100%);
-  --on-bg: #f8fafc;
-  --on-bg-dim: rgba(226, 232, 240, 0.68);
-  --card-bg: #ffffff;
-  --card-border: rgba(255, 255, 255, 0.5);
-  --card-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.6);
-  --chip-bg: #ffffff;
-  --chip-fg: #1e293b;
-  --segment-bg: rgba(255, 255, 255, 0.16);
-}
-
-[data-theme="coral"] {
+  /* Фиксированная тёплая тема «Коралл» */
   --app-bg: #fff1e8;
   --app-bg-image:
-    radial-gradient(62% 48% at 6% 0%, rgba(253, 186, 116, 0.55) 0%, transparent 68%),
-    radial-gradient(55% 42% at 100% 8%, rgba(244, 114, 182, 0.35) 0%, transparent 65%);
-  --on-bg: #431407;
-  --on-bg-dim: rgba(124, 45, 18, 0.65);
+    radial-gradient(65% 50% at 4% 0%, rgba(254, 215, 170, 0.65) 0%, transparent 68%),
+    radial-gradient(55% 42% at 100% 6%, rgba(251, 146, 60, 0.3) 0%, transparent 65%),
+    radial-gradient(70% 55% at 50% 100%, rgba(253, 186, 116, 0.45) 0%, transparent 70%);
+  --on-bg: #3d1405;
+  --on-bg-dim: rgba(130, 50, 20, 0.7);
   --card-bg: #ffffff;
-  --card-border: rgba(255, 255, 255, 0.8);
-  --card-shadow: 0 12px 32px -14px rgba(124, 45, 18, 0.25);
-  --chip-bg: #431407;
+  --card-border: rgba(251, 146, 60, 0.18);
+  --card-shadow: 0 4px 18px -6px rgba(124, 45, 18, 0.12), 0 1px 3px rgba(124, 45, 18, 0.05);
+  --chip-bg: #ea580c;
   --chip-fg: #ffffff;
-  --segment-bg: rgba(124, 45, 18, 0.12);
+  --segment-bg: rgba(234, 88, 12, 0.09);
 }
 
 html,
@@ -133,15 +88,48 @@ body {
   box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.3);
 }
 
-/* Крупные плитки-виджеты: squircle и плотный цвет */
+/* Крупные плитки-виджеты: squircle, живой градиент */
 .tile {
   border-radius: 30px;
-  box-shadow: 0 10px 24px -12px var(--tile-shadow, rgba(0, 0, 0, 0.35));
-  transition: transform 0.14s ease;
+  box-shadow: 0 12px 28px -10px var(--tile-shadow, rgba(0, 0, 0, 0.35));
+  transition: transform 0.14s ease, box-shadow 0.2s ease;
+  will-change: transform;
 }
 
 .tile:active {
   transform: scale(0.97);
+}
+
+/* Мягкий переливающийся живой градиент (на GPU через background-position) */
+@keyframes fluid-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.tile-income-gradient {
+  background: linear-gradient(135deg, #10b981 0%, #059669 35%, #047857 70%, #10b981 100%);
+  background-size: 240% 240%;
+  animation: fluid-gradient 10s ease-in-out infinite;
+}
+
+.tile-window-gradient {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 35%, #075985 70%, #0284c7 100%);
+  background-size: 240% 240%;
+  animation: fluid-gradient 10s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-income-gradient,
+  .tile-window-gradient {
+    animation: none !important;
+  }
 }
 
 .on-bg {

@@ -18,13 +18,13 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#F2F2F7",
+  themeColor: "#fff1e8",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    // data-theme ставится сразу, чтобы фон не мигал до загрузки скриптов
-    <html lang="ru" data-theme="ios" className={inter.variable}>
+    // Тема Коралл фиксирована
+    <html lang="ru" data-theme="coral" className={inter.variable}>
       <body className="min-h-dvh antialiased">
         {/* Telegram Mini App SDK: без него приложение работает и в браузере */}
         <script src="https://telegram.org/js/telegram-web-app.js" async />
