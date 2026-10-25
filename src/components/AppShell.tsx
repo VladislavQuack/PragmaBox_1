@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getTelegramDiagnostics, waitForTelegram, post } from "@/lib/client-api";
+import { setupTelegramShell } from "@/lib/telegram-shell";
 import { useAppData } from "@/lib/use-app-data";
 import { addDays, dayKey, fmtDayLong, fmtMoney, fmtWeekday, parseDayKey } from "@/lib/time";
 import { sumPrice, type Reminder } from "@/lib/analytics";
@@ -173,7 +174,6 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   const [financeFocusClientId, setFinanceFocusClientId] = useState<number | null>(null);
   // После «Открыть дашборд» не показываем превью повторно до следующего запуска приложения.
   const [onboardingPreviewOpen, setOnboardingPreviewOpen] = useState(FORCE_ONBOARDING_PREVIEW);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [premiumOpen, setPremiumOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -181,25 +181,15 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
 
   useEffect(() => {
     let cancelled = false;
-    let offViewport: (() => void) | undefined;
+    let teardown: (() => void) | undefined;
     (async () => {
       const tg = await waitForTelegram(2500);
       if (cancelled || !tg) return;
-      tg.ready?.();
-      tg.expand?.();
-      tg.setHeaderColor?.("#4A5BF0");
-      tg.setBackgroundColor?.("#F1F3F9");
-      const applyViewport = () => {
-        const h = tg.viewportStableHeight;
-        if (h) document.documentElement.style.setProperty("--app-h", `${h}px`);
-      };
-      applyViewport();
-      tg.onEvent?.("viewportChanged", applyViewport);
-      offViewport = () => tg.offEvent?.("viewportChanged", applyViewport);
+      teardown = setupTelegramShell(tg);
     })();
     return () => {
       cancelled = true;
-      offViewport?.();
+      teardown?.();
     };
   }, []);
 
@@ -231,7 +221,8 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
         now: data.now.toISOString(),
       });
       showToast(res.seeded ? "Демо-данные загружены" : "База уже не пустая");
-      setSettingsOpen(false);
+      // Демо грузят из профиля — сразу показываем результат на главном экране
+      if (res.seeded) setTab("day");
       data.reload();
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Ошибка");
@@ -281,6 +272,30 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   const isToday = activeKey === todayKey;
   const openClient = data.clients.find((c) => c.id === openClientId) ?? null;
   const earnedMonth = sumPrice(data.history.filter((s) => s.status === "done"));
+  const me = data.me;
+
+  // Шапка вкладок, кроме «Дня» (у него своя — с датой и лентой недели)
+  const hero =
+    tab === "finance"
+      ? { eyebrow: "Обзор", title: "Финансы", line: `Заработано: ${fmtMoney(earnedMonth)} · Должников: ${debtCount}` }
+      : tab === "clients"
+        ? { eyebrow: "База", title: "Клиенты", line: `Всего: ${data.clients.length} · Замеров: ${data.measurements.length}` }
+        : {
+            eyebrow: "Профиль",
+            title: me.name || "Тренер",
+            line: [me.username ? `@${me.username}` : null, `PragmaBox ${me.subscriptionTier === "premium" ? "Premium" : "Free"}`]
+              .filter(Boolean)
+              .join(" · "),
+          };
+
+  const avatar = me.photoUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={me.photoUrl} alt="" className="h-full w-full object-cover" />
+  ) : (
+    initialsOf(me.name)
+  );
+  const avatarClass =
+    "grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-white text-[13px] font-bold text-[#4A5BF0]";
 
   const navigateReminder = (r: Reminder) => {
     // Долг за тренировку — финансовое действие: ведём к списку должников.
@@ -300,8 +315,9 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
 
   return (
     <main className="app-screen mx-auto flex w-full max-w-md flex-col overflow-hidden bg-[#F1F3F9]">
-      {/* Шапка */}
-      <div className="hero-blue relative shrink-0 overflow-hidden rounded-b-[30px] px-5 pb-5 pt-[max(env(safe-area-inset-top),12px)]">
+      {/* Шапка. В полноэкранном режиме Telegram синий фон уходит под строку состояния,
+          а содержимое начинается ниже плавающих кнопок Telegram (--safe-top). */}
+      <div className="hero-blue relative shrink-0 overflow-hidden rounded-b-[30px] px-5 pb-5 pt-[max(var(--safe-top),12px)]">
         <div className="hero-pattern pointer-events-none absolute inset-0 opacity-60" />
 
         <div className="relative flex items-center justify-between gap-3">
@@ -324,12 +340,8 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             </label>
           ) : (
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">
-                {tab === "finance" ? "Обзор" : "База"}
-              </p>
-              <h1 className="truncate text-[24px] font-bold tracking-[-0.02em] text-white">
-                {tab === "finance" ? "Финансы" : "Клиенты"}
-              </h1>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">{hero.eyebrow}</p>
+              <h1 className="truncate text-[24px] font-bold tracking-[-0.02em] text-white">{hero.title}</h1>
             </div>
           )}
 
@@ -343,20 +355,21 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
                 Сегодня
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(true)}
-              aria-label="Профиль и настройки"
-              title={data.me?.name ?? ""}
-              className="grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-white text-[13px] font-bold text-[#4A5BF0] transition active:scale-90"
-            >
-              {data.me?.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={data.me.photoUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                initialsOf(data.me?.name)
-              )}
-            </button>
+            {tab === "profile" ? (
+              <span className={avatarClass} aria-hidden="true">
+                {avatar}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setTab("profile")}
+                aria-label="Профиль и настройки"
+                title={me.name}
+                className={`${avatarClass} transition active:scale-90`}
+              >
+                {avatar}
+              </button>
+            )}
           </div>
         </div>
 
@@ -368,11 +381,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onPick={(key) => data.setViewKey(key === todayKey ? null : key)}
           />
         ) : (
-          <p className="relative mt-1 text-[13px] font-medium text-white/75">
-            {tab === "finance"
-              ? `Заработано: ${fmtMoney(earnedMonth)} · Должников: ${debtCount}`
-              : `Всего: ${data.clients.length} · Замеров: ${data.measurements.length}`}
-          </p>
+          <p className="relative mt-1 truncate text-[13px] font-medium text-white/75">{hero.line}</p>
         )}
       </div>
 
@@ -382,12 +391,13 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
         </p>
       )}
 
-      {/* Вкладка «День» — строго без прокрутки: таймлайн занимает остаток экрана.
-          Иначе даже микро-скролл сбивает подсветку тура. Остальные вкладки листаются. */}
+      {/* Все вкладки листаются, шапка и нижняя панель остаются на месте.
+          На «Дне» таймлайн не сжимается ниже своего содержимого: в Telegram
+          экран низкий, и без прокрутки записи на таймлайне было не разглядеть.
+          key: при смене вкладки прокрутка начинается сверху. */}
       <div
-        className={`flex min-h-0 flex-1 flex-col px-4 pb-3 pt-3 ${
-          tab === "day" ? "overflow-hidden" : "no-scrollbar overflow-y-auto overscroll-contain"
-        }`}
+        key={tab}
+        className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-3 pt-3"
       >
         {tab === "day" && (
           <DayTab
@@ -424,16 +434,25 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onOpenPremium={() => setPremiumOpen(true)}
           />
         )}
+        {tab === "profile" && (
+          <SettingsPanel
+            prefs={prefs}
+            onChange={setPrefs}
+            onSeed={seedDemo}
+            clientCount={data.clients.length}
+            subscriptionTier={data.me.subscriptionTier}
+            onOpenPremium={() => setPremiumOpen(true)}
+            showGuides={showGuides}
+            onStartTutorial={() => {
+              setTab("day");
+              setTimeout(() => setTutorialOpen(true), 250);
+            }}
+          />
+        )}
       </div>
 
-      <div className="shrink-0 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-1">
-        <BottomNav
-          tab={tab}
-          onChange={setTab}
-          debtCount={debtCount}
-          onProfile={() => setSettingsOpen(true)}
-          profileActive={settingsOpen}
-        />
+      <div className="shrink-0 px-4 pb-[max(var(--safe-bottom),12px)] pt-1">
+        <BottomNav tab={tab} onChange={setTab} debtCount={debtCount} />
       </div>
 
       <Sheet open={openClient !== null} onClose={() => setOpenClientId(null)} title={openClient?.name ?? ""} full>
@@ -456,23 +475,6 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
         )}
       </Sheet>
 
-      <Sheet open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Настройки">
-        <SettingsPanel
-          prefs={prefs}
-          onChange={setPrefs}
-          onSeed={seedDemo}
-          clientCount={data.clients.length}
-          subscriptionTier={data.me.subscriptionTier}
-          onOpenPremium={() => setPremiumOpen(true)}
-          showGuides={showGuides}
-          onStartTutorial={() => {
-            setSettingsOpen(false);
-            setTab("day");
-            setTimeout(() => setTutorialOpen(true), 250);
-          }}
-        />
-      </Sheet>
-
       <AppTutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} onSwitchTab={setTab} />
 
       <PremiumOffer
@@ -483,7 +485,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
       />
 
       {toast && (
-        <div className="pointer-events-none fixed bottom-24 left-1/2 z-[60] -translate-x-1/2 whitespace-nowrap rounded-full bg-[#0F1C33]/90 px-4 py-2 text-sm font-medium text-white shadow-lg">
+        <div className="pointer-events-none fixed bottom-[calc(var(--safe-bottom)+96px)] left-1/2 z-[60] -translate-x-1/2 whitespace-nowrap rounded-full bg-[#0F1C33]/90 px-4 py-2 text-sm font-medium text-white shadow-lg">
           {toast}
         </div>
       )}

@@ -238,7 +238,7 @@ export default function VerticalTimelineExpanded({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[#F1F3F9]">
-      <header className="hero-blue relative shrink-0 overflow-hidden px-5 pb-6 pt-[max(env(safe-area-inset-top),12px)]">
+      <header className="hero-blue relative shrink-0 overflow-hidden px-5 pb-6 pt-[max(var(--safe-top),12px)]">
         <div className="hero-pattern pointer-events-none absolute inset-0 opacity-60" />
         <div className="relative flex items-center justify-between">
           <label className="relative flex cursor-pointer items-center gap-1.5">
@@ -341,7 +341,7 @@ export default function VerticalTimelineExpanded({
         </div>
       </header>
 
-      <div className="relative -mt-4 flex min-h-0 flex-1 flex-col rounded-t-[28px] bg-white px-4 pb-[max(env(safe-area-inset-bottom),14px)] pt-4">
+      <div className="relative -mt-4 flex min-h-0 flex-1 flex-col rounded-t-[28px] bg-white px-4 pb-[max(var(--safe-bottom),14px)] pt-4">
         <div className="flex shrink-0 items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="truncate text-[22px] font-bold capitalize tracking-[-0.02em] text-[#0F1C33]">

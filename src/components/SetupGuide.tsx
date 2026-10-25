@@ -25,7 +25,7 @@ export default function SetupGuide({ hasToken }: { hasToken: boolean }) {
   };
 
   return (
-    <main className="mx-auto w-full max-w-md px-4 pb-16 pt-[max(env(safe-area-inset-top),16px)]">
+    <main className="mx-auto w-full max-w-md px-4 pb-16 pt-[max(var(--safe-top),16px)]">
       <header className="mb-4">
         <Link href="/" className="on-bg-dim text-sm font-semibold">
           ← На дашборд

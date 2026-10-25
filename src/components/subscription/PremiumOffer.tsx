@@ -43,7 +43,7 @@ export default function PremiumOffer({ open, onClose, clientCount, tier }: Premi
         role="dialog"
         aria-modal="true"
         aria-label="PragmaBox Premium"
-        className="relative w-full max-w-md overflow-hidden rounded-t-[30px] bg-white shadow-2xl animate-sheet-up"
+        className="sheet-surface no-scrollbar relative max-h-[calc(100dvh-var(--app-safe-top)-8px)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[30px] bg-white shadow-2xl animate-sheet-up"
       >
         <div className="hero-blue relative overflow-hidden px-5 pb-7 pt-5">
           <div className="hero-pattern pointer-events-none absolute inset-0 opacity-60" />
@@ -70,7 +70,7 @@ PragmaBox Premium
           </div>
         </div>
 
-        <div className="px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-5">
+        <div className="px-5 pb-[max(var(--safe-bottom),20px)] pt-5">
           <div className="flex gap-2 rounded-[20px] bg-[#F1F3F9] p-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-white text-[#4A5BF0] shadow-sm">
               <IconUsers className="h-5 w-5" />

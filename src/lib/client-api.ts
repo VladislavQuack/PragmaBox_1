@@ -11,17 +11,22 @@ export class ApiError extends Error {
   }
 }
 
-interface TgWebApp {
+export interface TgWebApp {
   initData?: string;
   initDataUnsafe?: { query_id?: string; user?: { id?: number } };
   platform?: string;
   version?: string;
+  isVersionAtLeast?: (version: string) => boolean;
   ready?: () => void;
   expand?: () => void;
   viewportStableHeight?: number;
-  // Без этого вертикальный свайп по карте сворачивает мини-апп
+  // Bot API 7.7+: без этого свайп вниз по шторке или списку сворачивает мини-апп
   disableVerticalSwipes?: () => void;
   enableVerticalSwipes?: () => void;
+  // Bot API 8.0+: полноэкранный режим
+  isFullscreen?: boolean;
+  requestFullscreen?: () => void;
+  exitFullscreen?: () => void;
   onEvent?: (event: string, cb: () => void) => void;
   offEvent?: (event: string, cb: () => void) => void;
   setHeaderColor?: (color: string) => void;

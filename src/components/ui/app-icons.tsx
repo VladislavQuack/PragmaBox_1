@@ -18,11 +18,11 @@ import settingsPurple from "./Icons/Settings_Purple.svg";
 export type IconPair = { gray: StaticImageData; purple: StaticImageData };
 
 // Нижняя панель: серая версия — раздел не открыт, фиолетовая — открыт.
-export const NAV_ICONS: Record<"finance" | "day" | "clients" | "settings", IconPair> = {
+export const NAV_ICONS: Record<"finance" | "day" | "clients" | "profile", IconPair> = {
   finance: { gray: financesGray, purple: financesPurple },
   day: { gray: mainGray, purple: mainPurple },
   clients: { gray: clientsGray, purple: clientsPurple },
-  settings: { gray: settingsGray, purple: settingsPurple },
+  profile: { gray: settingsGray, purple: settingsPurple },
 };
 
 // Белые глифы для цветных плашек виджетов на дашборде.

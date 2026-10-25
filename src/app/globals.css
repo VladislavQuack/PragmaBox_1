@@ -4,6 +4,24 @@
   color-scheme: light;
   --app-h: var(--tg-viewport-stable-height, 100dvh);
 
+  /* Безопасные отступы. В полноэкранном режиме Telegram страница уходит под строку
+     состояния, а сверху висят плавающие кнопки Telegram («Закрыть» и «⌄ ⋯»).
+     Отступы Telegram передаёт CSS-переменными: --tg-safe-area-inset-* — вырез,
+     строка состояния, полоска «домой»; --tg-content-safe-area-inset-* — его кнопки.
+     Вторые считаются внутри первых, поэтому их складываем.
+     env() — запасной вариант для обычного браузера. */
+  --app-safe-top: max(
+    env(safe-area-inset-top, 0px),
+    calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px))
+  );
+  --safe-bottom: max(
+    env(safe-area-inset-bottom, 0px),
+    calc(var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px))
+  );
+  /* Сколько отступать сверху содержимому слоя. Шторки, которые и так начинаются
+     ниже кнопок Telegram, обнуляют её для своего содержимого. */
+  --safe-top: var(--app-safe-top);
+
   /* Fintech palette — фиолетовый из Figma */
   --brand: #4a5bf0;
   --brand-deep: #3d4edb;
@@ -165,8 +183,24 @@ body {
   background: linear-gradient(180deg, #ffffff 0%, #f3f5fd 100%);
 }
 
-/* Короткие экраны (≤700px по высоте): дашборд ужимается,
-   чтобы влезал без прокрутки — иначе микро-скролл ломал вёрстку тура. */
+/* Шторка «на весь экран» начинается под кнопками Telegram: иначе в полноэкранном
+   режиме её заголовок и крестик уходят под «Закрыть» и «⋯». Сверху остаётся видна
+   затемнённая шапка приложения, поэтому углы скругляем. В обычном режиме отступ
+   равен нулю, и шторка занимает весь экран, как раньше. */
+.sheet-full {
+  height: calc(100dvh - var(--app-safe-top));
+}
+html[data-tg-fullscreen] .sheet-full {
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+}
+/* Содержимое шторки уже ниже кнопок Telegram — отступать ему не нужно. */
+.sheet-surface {
+  --safe-top: 0px;
+}
+
+/* Короткие экраны (≤700px по высоте): плитки и шапка компактнее, чтобы на экран
+   помещалось больше. Ничего не прячем — дашборд листается. */
 @media (max-height: 700px) {
   .tile {
     padding-top: 10px;
@@ -174,17 +208,9 @@ body {
     border-radius: 20px;
     min-height: 0 !important;
   }
-  /* На узком экране показываем главное напоминание, вторая строка уедет */
-  [data-tutorial="reminders-widget"] li:nth-of-type(2) {
-    display: none;
-  }
   [data-tutorial="date-switcher"] button {
     padding-top: 4px;
     padding-bottom: 4px;
-  }
-  /* Декоративная нижняя строка плиток прячется: основные цифры и подписи остаются */
-  [data-tile-foot] {
-    display: none;
   }
   .tile .num {
     font-size: 21px;
@@ -200,8 +226,7 @@ body {
   }
 }
 
-/* На коротких телефонах шапка и сводка становятся компактнее,
-   чтобы таймлайн не схлопывался до узкой полосы. */
+/* На совсем коротких телефонах шапка и сводка ещё компактнее. */
 @media (max-height: 600px) {
   .app-screen > .hero-blue {
     padding-bottom: 10px !important;
@@ -246,7 +271,7 @@ body {
     padding-bottom: 3px;
   }
   .app-screen > div:last-of-type:not(.hero-blue) {
-    padding-bottom: max(env(safe-area-inset-bottom), 7px) !important;
+    padding-bottom: max(var(--safe-bottom), 7px) !important;
     padding-top: 0 !important;
   }
   .app-screen [data-tutorial="bottom-nav"] button {

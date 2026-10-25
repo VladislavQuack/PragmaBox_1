@@ -146,7 +146,7 @@ export default function OnboardingFinishing({ onComplete }: { onComplete: () => 
       </div>
 
       {/* 4 аккуратных шаговых индикатора снизу */}
-      <div className="absolute bottom-[max(env(safe-area-inset-bottom),28px)] flex items-center gap-1.5">
+      <div className="absolute bottom-[max(var(--safe-bottom),28px)] flex items-center gap-1.5">
         {STEPS.map((_, i) => (
           <span
             key={i}

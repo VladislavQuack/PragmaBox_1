@@ -159,7 +159,9 @@ export default function DayTab({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
+    // grow + shrink-0: на высоком экране вкладка заполняет его целиком,
+    // на низком — не сжимается, и экран листается
+    <div className="flex shrink-0 grow flex-col gap-2">
       {loaded && clients.length === 0 && (
         <div className="glass-card shrink-0 rounded-[28px] p-5 text-center">
           <p className="font-semibold text-[#0F1C33]">Пока пусто</p>
@@ -203,9 +205,9 @@ export default function DayTab({
         )}
       </div>
 
-      {/* Таймлайн забирает всё оставшееся место экрана */}
-      {/* min-h-0 разрешает сжать до пола высоты; ниже пола таймлайн не опустится */}
-      <div ref={timelineRef} data-tutorial="timeline-widget" className={`flex min-h-0 flex-1 flex-col ${isFirstEntry ? "dash-enter-item dash-enter-3" : ""}`}>
+      {/* Таймлайн забирает оставшееся место экрана, но не становится ниже своих записей:
+          если места мало, экран листается */}
+      <div ref={timelineRef} data-tutorial="timeline-widget" className={`flex shrink-0 grow flex-col ${isFirstEntry ? "dash-enter-item dash-enter-3" : ""}`}>
         <TimelineWidget
           day={day}
           sessions={daySessions}

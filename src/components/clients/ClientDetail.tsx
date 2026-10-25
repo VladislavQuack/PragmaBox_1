@@ -448,7 +448,7 @@ export default function ClientDetail({
           ref={confirmRef}
           role="alertdialog"
           aria-label={`Удалить клиента ${client.name}`}
-          className="animate-fade-in scroll-mb-[max(env(safe-area-inset-bottom),24px)] rounded-[22px] border border-[#F3C2C7] bg-[#FDECEF] p-4"
+          className="animate-fade-in scroll-mb-[max(var(--safe-bottom),24px)] rounded-[22px] border border-[#F3C2C7] bg-[#FDECEF] p-4"
         >
           <p className="text-[15px] font-bold text-[#B4232E]">Удалить клиента «{client.name}»?</p>
           <p className="mt-1.5 text-[12px] leading-relaxed text-[#8F2A33]">
