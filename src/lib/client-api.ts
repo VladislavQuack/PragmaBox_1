@@ -13,6 +13,9 @@ export class ApiError extends Error {
 
 interface TgWebApp {
   initData?: string;
+  initDataUnsafe?: { query_id?: string; user?: { id?: number } };
+  platform?: string;
+  version?: string;
   ready?: () => void;
   expand?: () => void;
   viewportStableHeight?: number;
@@ -31,8 +34,41 @@ export function telegramWebApp(): TgWebApp | undefined {
   return (window as unknown as { Telegram?: { WebApp?: TgWebApp } }).Telegram?.WebApp;
 }
 
-// Скрипт Telegram подключён с async, поэтому он может загрузиться позже первого запроса.
-// Ждём его, иначе initData ещё пуст и сервер не узнает, кто открыл приложение.
+// initData из объекта Telegram. Плюс запасной путь: Telegram также кладёт
+// сырые launch-параметры в URL (tgWebAppData) — это спасает, если скрипт
+// telegram-web-app.js не успел загрузиться или был заблокирован.
+export function getInitData(): string {
+  if (typeof window === "undefined") return "";
+  const fromApi = telegramWebApp()?.initData?.trim();
+  if (fromApi) return fromApi;
+  try {
+    const hash = window.location.hash?.startsWith("#") ? window.location.hash.slice(1) : "";
+    const search = window.location.search?.startsWith("?") ? window.location.search.slice(1) : "";
+    for (const part of [hash, search]) {
+      if (!part) continue;
+      const tgData = new URLSearchParams(part).get("tgWebAppData");
+      if (tgData?.trim()) return tgData.trim();
+    }
+  } catch {
+    // ignore
+  }
+  return "";
+}
+
+export function isTelegramEnv(): boolean {
+  if (typeof window === "undefined") return false;
+  const tg = telegramWebApp();
+  if (tg && ((tg.platform !== undefined && tg.platform !== "unknown") || tg.version)) return true;
+  try {
+    const combined = `${window.location.search} ${window.location.hash}`;
+    return combined.includes("tgWebAppData") || combined.includes("tgWebAppVersion");
+  } catch {
+    return false;
+  }
+}
+
+// Скрипт Telegram может загрузиться позже первого рендера.
+// Ждём сам объект — для viewport-настроек этого достаточно.
 export async function waitForTelegram(maxMs = 2500): Promise<TgWebApp | undefined> {
   if (typeof window === "undefined") return undefined;
   const existing = telegramWebApp();
@@ -47,8 +83,64 @@ export async function waitForTelegram(maxMs = 2500): Promise<TgWebApp | undefine
   return undefined;
 }
 
+// А перед запросами к API ждём именно непустой initData.
+// Раньше мы возвращались сразу при появлении объекта WebApp, и запрос
+// иногда уходил без подписи — сервер отвечал 401 «Telegram не передал данные».
+export async function waitForInitData(maxMs = 5000): Promise<string> {
+  if (typeof window === "undefined") return "";
+  const started = Date.now();
+  for (;;) {
+    const data = getInitData();
+    if (data) return data;
+    if (Date.now() - started >= maxMs) return "";
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+  }
+}
+
+export interface TelegramDiagnostics {
+  hasTelegramObject: boolean;
+  hasInitData: boolean;
+  initDataLength: number;
+  platform: string;
+  version: string;
+  urlHasTgData: boolean;
+  userAgent: string;
+}
+
+export function getTelegramDiagnostics(): TelegramDiagnostics {
+  if (typeof window === "undefined") {
+    return {
+      hasTelegramObject: false,
+      hasInitData: false,
+      initDataLength: 0,
+      platform: "-",
+      version: "-",
+      urlHasTgData: false,
+      userAgent: "-",
+    };
+  }
+  const tg = telegramWebApp();
+  const initData = getInitData();
+  let urlHasTgData = false;
+  try {
+    const combined = `${window.location.search} ${window.location.hash}`;
+    urlHasTgData = combined.includes("tgWebAppData");
+  } catch {
+    // ignore
+  }
+  return {
+    hasTelegramObject: Boolean(tg),
+    hasInitData: initData.length > 0,
+    initDataLength: initData.length,
+    platform: tg?.platform ?? "-",
+    version: tg?.version ?? "-",
+    urlHasTgData,
+    userAgent: window.navigator.userAgent.slice(0, 120),
+  };
+}
+
 function authHeaders(): Record<string, string> {
-  const initData = telegramWebApp()?.initData;
+  const initData = getInitData();
   return initData ? { "X-Telegram-Init-Data": initData } : {};
 }
 

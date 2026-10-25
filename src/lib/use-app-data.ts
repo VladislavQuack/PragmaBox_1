@@ -2,7 +2,7 @@
 
 // Общие данные приложения: грузим один раз и отдаём всем вкладкам.
 import { useCallback, useEffect, useState } from "react";
-import { ApiError, api, waitForTelegram } from "@/lib/client-api";
+import { ApiError, api, getInitData, isTelegramEnv, waitForInitData } from "@/lib/client-api";
 import { addDays, dayKey, parseDayKey } from "@/lib/time";
 import type { ClientDTO, MeasurementDTO, SessionDTO } from "@/lib/types";
 
@@ -54,9 +54,16 @@ export function useAppData() {
     const dayKey = activeKey;
     const todayKeyStr = todayKey;
     (async () => {
-      // Сначала дожидаемся SDK Telegram, чтобы в запрос попал initData
-      await waitForTelegram(2500);
+      // Ждём именно непустой initData (до 5 сек), иначе запрос уйдёт без
+      // подписи и сервер вернёт 401 «Telegram не передал данные».
+      await waitForInitData(5000);
       if (cancelled) return;
+      // Внутри Telegram без initData дальше идти бессмысленно — покажем
+      // экран с кнопкой «Попробовать снова», а не вечную загрузку.
+      if (!getInitData() && isTelegramEnv()) {
+        setAuthError("Telegram не передал данные. Закрой мини-апп и открой снова кнопкой бота");
+        return;
+      }
       await load();
     })();
     return () => {

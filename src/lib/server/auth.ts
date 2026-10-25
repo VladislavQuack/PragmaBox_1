@@ -97,11 +97,16 @@ function demoAllowed(): boolean {
 
 export async function requireTrainer(req: Request): Promise<Trainer> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const initData = req.headers.get(INIT_DATA_HEADER) ?? "";
+  const initData = (req.headers.get(INIT_DATA_HEADER) ?? "").trim();
 
   if (token && initData) {
     const user = verifyInitData(initData, token);
-    if (!user) throw new AuthError("Подпись Telegram не подошла");
+    if (!user) {
+      console.error(
+        `[telegram-auth] Bad signature: headerLen=${initData.length} hasToken=${Boolean(token)} ua=${(req.headers.get("user-agent") ?? "-").slice(0, 80)}`,
+      );
+      throw new AuthError("Подпись Telegram не подошла");
+    }
     const name = [user.first_name, user.last_name].filter(Boolean).join(" ").trim() || `id${user.id}`;
     return upsertTrainer({
       tgId: String(user.id),
@@ -112,8 +117,11 @@ export async function requireTrainer(req: Request): Promise<Trainer> {
   }
 
   if (!demoAllowed()) {
-    // Токен задан, но initData пуст: приложение открыли не через кнопку бота
-    // либо SDK Telegram ещё не успел загрузиться.
+    // Токен задан, но initData пуст: приложение открыли не через кнопку бота,
+    // либо SDK Telegram ещё не успел загрузиться, либо клиент закэширован.
+    console.error(
+      `[telegram-auth] Empty initData: headerLen=${initData.length} hasToken=${Boolean(token)} ua=${(req.headers.get("user-agent") ?? "-").slice(0, 80)}`,
+    );
     throw new AuthError(
       initData
         ? "Подпись не подошла. Проверь, что токен бота от того же бота, через который открываешь"

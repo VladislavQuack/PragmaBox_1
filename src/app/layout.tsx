@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const inter = Inter({
@@ -25,7 +26,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru" data-theme="fintech" className={inter.variable}>
       <body className="min-h-dvh antialiased">
-        <script src="https://telegram.org/js/telegram-web-app.js" async />
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
         {children}
       </body>
     </html>

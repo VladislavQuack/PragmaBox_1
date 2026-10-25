@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { waitForTelegram, post } from "@/lib/client-api";
+import { getTelegramDiagnostics, waitForTelegram, post } from "@/lib/client-api";
 import { useAppData } from "@/lib/use-app-data";
 import { addDays, dayKey, fmtDayLong, fmtMoney, fmtWeekday, parseDayKey } from "@/lib/time";
 import { sumPrice, type Reminder } from "@/lib/analytics";
@@ -31,6 +31,71 @@ const initialsOf = (name?: string) =>
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase())
     .join("") || "ТР";
+
+function AuthErrorScreen({
+  message,
+  showGuides,
+  onRetry,
+}: {
+  message: string;
+  showGuides: boolean;
+  onRetry: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const diag = useMemo(() => getTelegramDiagnostics(), []);
+  const inTelegram = diag.hasTelegramObject || diag.urlHasTgData;
+
+  const copyDiag = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        `authError=${message} hasTelegram=${diag.hasTelegramObject} hasInitData=${diag.hasInitData} len=${diag.initDataLength} platform=${diag.platform} ver=${diag.version} urlTg=${diag.urlHasTgData}`,
+      );
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore
+    }
+  };
+
+  return (
+    <main className="grid min-h-dvh place-items-center bg-[#F1F3F9] px-6">
+      <div className="w-full max-w-sm rounded-[24px] border border-[#E6EAF3] bg-white p-6 text-center shadow-sm">
+        <p className="text-3xl">🔒</p>
+        <h1 className="mt-3 text-lg font-bold text-[#0F1C33]">{message}</h1>
+        <p className="mt-2 text-sm text-[#5C6B86]">
+          {inTelegram
+            ? "Telegram открыт, но данные для входа не дошли. Нажми «Попробовать снова», а если не поможет — полностью закрой мини-апп и открой его кнопкой меню бота."
+            : "Похоже, страница открыта не внутри Telegram. Открой приложение кнопкой меню бота."}
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-4 w-full rounded-full bg-[#4A5BF0] px-5 py-2.5 text-sm font-semibold text-white transition active:scale-95"
+        >
+          Попробовать снова
+        </button>
+        {showGuides && (
+          <a
+            href="/setup"
+            className="mt-2 inline-block rounded-full bg-[#F1F3F9] px-5 py-2.5 text-sm font-semibold text-[#4A5BF0]"
+          >
+            Как подключить бота
+          </a>
+        )}
+        <button
+          type="button"
+          onClick={copyDiag}
+          className="mt-3 text-[11px] font-medium text-[#9AA6BE] underline"
+        >
+          {copied ? "Диагностика скопирована ✓" : "Скопировать диагностику для поддержки"}
+        </button>
+        <p className="mt-1 text-[10px] text-[#C4CCDD]">
+          tg:{diag.hasTelegramObject ? "да" : "нет"} · initData:{diag.hasInitData ? `да (${diag.initDataLength})` : "нет"} · {diag.platform} {diag.version}
+        </p>
+      </div>
+    </main>
+  );
+}
 
 // Лента дней: три недели вокруг выбранного дня, выбранный всегда по центру.
 // Листается пальцем, поэтому стрелки «назад/вперёд» в шапке не нужны.
@@ -173,25 +238,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   };
 
   if (data.authError) {
-    return (
-      <main className="grid min-h-dvh place-items-center bg-[#F1F3F9] px-6">
-        <div className="w-full max-w-sm rounded-[24px] border border-[#E6EAF3] bg-white p-6 text-center shadow-sm">
-          <p className="text-3xl">🔒</p>
-          <h1 className="mt-3 text-lg font-bold text-[#0F1C33]">{data.authError}</h1>
-          <p className="mt-2 text-sm text-[#5C6B86]">
-            Открой мини-апп через кнопку меню бота. Если ты уже так сделал, закрой мини-апп полностью и открой снова.
-          </p>
-          {showGuides && (
-            <a
-              href="/setup"
-              className="mt-5 inline-block rounded-full bg-[#4A5BF0] px-5 py-2.5 text-sm font-semibold text-white"
-            >
-              Как подключить бота
-            </a>
-          )}
-        </div>
-      </main>
-    );
+    return <AuthErrorScreen message={data.authError} showGuides={showGuides} onRetry={data.reload} />;
   }
 
   const { now, todayKey, activeKey } = data;
