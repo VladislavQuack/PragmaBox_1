@@ -20,13 +20,8 @@
   width: min(56vw, 212px, 26dvh);
   border-radius: 26px;
 }
-.stageCompact .caption {
-  bottom: 7px;
-  font-size: 8px;
-}
 
-/* Один квадратный Lottie-ready слот. На первом экране больше нет карточек или
-   парящих декоративных блоков: только одна цельная иллюстрация. */
+/* Квадратный слот под Lottie: его размер задаёт размер анимации на экране. */
 .slot {
   position: relative;
   display: grid;
@@ -45,70 +40,14 @@
   transition: width 0.3s ease;
 }
 
-.aura {
+/* Анимация заполняет слот целиком. Масштаб внутри квадрата — через inset:
+   положительный отступ уменьшает анимацию, отрицательный увеличивает. */
+.lottie {
   position: absolute;
-  inset: 9%;
-  border-radius: 28%;
-  background: radial-gradient(circle at 50% 55%, rgba(116, 132, 255, .12), rgba(116, 132, 255, 0) 72%);
-}
-
-.art {
-  position: absolute;
-  inset: 3% 4% 8%;
-  width: 92%;
-  height: 89%;
-  overflow: visible;
-}
-
-.calendar {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: welcome-float 5.8s ease-in-out infinite;
-}
-
-.floatingBadge {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: badge-float 4.2s ease-in-out infinite;
-}
-
-.sparkle {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: sparkle-pulse 3.6s ease-in-out infinite;
-}
-
-.caption {
-  position: absolute;
-  right: 0;
-  bottom: 9px;
-  left: 0;
-  color: #858eae;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: .015em;
-  text-align: center;
-}
-
-@keyframes welcome-float {
-  0%, 100% { transform: translateY(1px) rotate(-.3deg); }
-  50% { transform: translateY(-3px) rotate(.3deg); }
-}
-@keyframes badge-float {
-  0%, 100% { transform: translateY(1px); }
-  50% { transform: translateY(-4px); }
-}
-@keyframes sparkle-pulse {
-  0%, 100% { opacity: .55; transform: scale(.9); }
-  50% { opacity: .95; transform: scale(1.08); }
+  inset: 0;
 }
 
 @media (max-height: 620px) {
   .stage { padding-top: 49px; padding-bottom: 12px; }
   .slot { width: min(62vw, 34dvh, 224px); border-radius: 26px; }
-  .caption { bottom: 7px; font-size: 8px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .calendar, .floatingBadge, .sparkle { animation: none !important; }
 }

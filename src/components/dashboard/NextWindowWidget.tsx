@@ -2,7 +2,8 @@
 
 import type { Gap } from "@/lib/analytics";
 import { fmtTime } from "@/lib/time";
-import { IconArrowRight, IconClock } from "@/components/ui/icons";
+import { IconArrowRight } from "@/components/ui/icons";
+import { SvgIcon, WIDGET_ICONS } from "@/components/ui/app-icons";
 
 interface NextWindowWidgetProps {
   isToday: boolean;
@@ -46,7 +47,7 @@ export default function NextWindowWidget({ isToday, now, gap, onOpen }: NextWind
     >
       <span className="flex items-center justify-between">
         <span className="chip-blue grid h-9 w-9 place-items-center rounded-[13px]">
-          <IconClock className="h-5 w-5" />
+          <SvgIcon src={WIDGET_ICONS.nextWindow} className="h-5 w-5" />
         </span>
         <IconArrowRight className="h-4 w-4 text-[#B5C2D6]" />
       </span>

@@ -78,14 +78,19 @@ async function upsertTrainer(input: {
       .returning();
     return updated;
   }
+  // Новый тренер. При первом запуске приложение шлёт несколько запросов сразу,
+  // и все они могут одновременно не найти тренера. Поэтому вставка атомарная:
+  // при конфликте по tg_id обновляем ту же строку, а не падаем на уникальном индексе
+  // (раньше часть запросов получала 500 и новый тренер видел экран ошибки входа).
+  const profile = {
+    name: input.name,
+    username: input.username ?? null,
+    photoUrl: input.photoUrl ?? null,
+  };
   const [created] = await db
     .insert(trainers)
-    .values({
-      tgId: input.tgId,
-      name: input.name,
-      username: input.username ?? null,
-      photoUrl: input.photoUrl ?? null,
-    })
+    .values({ tgId: input.tgId, ...profile })
+    .onConflictDoUpdate({ target: trainers.tgId, set: profile })
     .returning();
   return created;
 }

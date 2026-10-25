@@ -427,7 +427,13 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
       </div>
 
       <div className="shrink-0 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-1">
-        <BottomNav tab={tab} onChange={setTab} debtCount={debtCount} onProfile={() => setSettingsOpen(true)} />
+        <BottomNav
+          tab={tab}
+          onChange={setTab}
+          debtCount={debtCount}
+          onProfile={() => setSettingsOpen(true)}
+          profileActive={settingsOpen}
+        />
       </div>
 
       <Sheet open={openClient !== null} onClose={() => setOpenClientId(null)} title={openClient?.name ?? ""} full>

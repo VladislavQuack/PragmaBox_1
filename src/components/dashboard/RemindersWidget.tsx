@@ -1,7 +1,8 @@
 "use client";
 
 import type { Reminder } from "@/lib/analytics";
-import { IconArrowRight, IconBell } from "@/components/ui/icons";
+import { IconArrowRight } from "@/components/ui/icons";
+import { SvgIcon, WIDGET_ICONS } from "@/components/ui/app-icons";
 
 interface RemindersWidgetProps {
   reminders: Reminder[];
@@ -23,7 +24,7 @@ export default function RemindersWidget({ reminders, onOpen, onAction }: Reminde
       <div className="mb-1 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <span className="chip-amber grid h-9 w-9 place-items-center rounded-[13px]">
-            <IconBell className="h-5 w-5" />
+            <SvgIcon src={WIDGET_ICONS.reminders} className="h-5 w-5" />
           </span>
           <h3 className="text-[15px] font-bold text-[#0F1C33]">Напоминания</h3>
           {reminders.length > 0 && (
