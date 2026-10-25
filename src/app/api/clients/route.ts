@@ -1,7 +1,16 @@
 import { db } from "@/db";
 import { clients, packages } from "@/db/schema";
 import { withTrainer } from "@/lib/server/auth";
-import { badRequest, loadClients, parseDate, toInt, toText } from "@/lib/server/data";
+import {
+  badRequest,
+  clientLimitResponse,
+  countTrainerClients,
+  loadClients,
+  parseDate,
+  toInt,
+  toText,
+} from "@/lib/server/data";
+import { clientLimitForTier } from "@/lib/subscription";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +27,11 @@ export function POST(req: Request) {
 
     const name = toText(body.name);
     if (!name) return badRequest("Введи имя клиента");
+
+    const limit = clientLimitForTier(trainer.subscriptionTier);
+    if (limit !== null && (await countTrainerClients(trainer.id)) >= limit) {
+      return clientLimitResponse(limit);
+    }
 
     const [client] = await db
       .insert(clients)

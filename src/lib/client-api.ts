@@ -16,6 +16,9 @@ interface TgWebApp {
   ready?: () => void;
   expand?: () => void;
   viewportStableHeight?: number;
+  // Без этого вертикальный свайп по карте сворачивает мини-апп
+  disableVerticalSwipes?: () => void;
+  enableVerticalSwipes?: () => void;
   onEvent?: (event: string, cb: () => void) => void;
   offEvent?: (event: string, cb: () => void) => void;
   setHeaderColor?: (color: string) => void;

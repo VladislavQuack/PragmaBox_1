@@ -1,6 +1,6 @@
 // Серверные хелперы: парсинг входных данных и загрузка связанных сущностей.
 // Все выборки ограничены текущим тренером.
-import { and, asc, eq, type SQL } from "drizzle-orm";
+import { and, asc, count, eq, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { clients, measurements, packages, sessions } from "@/db/schema";
 import type { ClientDTO, MeasurementDTO, PackageDTO, SessionDTO } from "@/lib/types";
@@ -117,6 +117,25 @@ export async function loadMeasurements(trainerId: number): Promise<MeasurementDT
     .where(eq(measurements.trainerId, trainerId))
     .orderBy(asc(measurements.takenOn));
   return rows.map(toMeasurementDTO);
+}
+
+export async function countTrainerClients(trainerId: number): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(clients)
+    .where(eq(clients.trainerId, trainerId));
+  return Number(row?.value ?? 0);
+}
+
+export function clientLimitResponse(limit: number) {
+  return Response.json(
+    {
+      error: `На бесплатном плане можно вести до ${limit} клиентов.`,
+      code: "FREE_CLIENT_LIMIT",
+      limit,
+    },
+    { status: 403 },
+  );
 }
 
 // Проверяем, что сущность принадлежит этому тренеру

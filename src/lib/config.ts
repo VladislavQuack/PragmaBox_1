@@ -5,7 +5,7 @@ export const WORK_END_HOUR = 23;
 export const PX_PER_HOUR = 100;
 // Минимальная высота таймлайна. Обычно он растягивается на всё свободное место экрана,
 // а мастер создания открывается в тех же границах, не меняя размер виджета.
-export const TIMELINE_HEIGHT = 300;
+export const TIMELINE_HEIGHT = 200;
 export const DAILY_GOAL = 3200;
 export const SNAP_MINUTES = 15;
 export const MIN_GAP_MINUTES = 15;

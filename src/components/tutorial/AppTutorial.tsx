@@ -18,15 +18,15 @@ const STEPS: TutorialStep[] = [
     badge: "Шаг 1 из 7",
     title: "Календарь и рабочий день",
     description:
-      "Здесь вы быстро переключаете дни. Стрелки двигают день вперёд-назад, а тап по дате открывает выбор любого числа. Кнопка «Сегодня» возвращает на текущий день.",
+      "Лента недели листается пальцем, тап по числу переключает день. Тап по большой дате открывает календарь, а кнопка «Сегодня» возвращает на текущий день. Точки под числом — сколько в этот день клиентов.",
     tab: "day",
   },
   {
     target: '[data-tutorial="income-widget"]',
     badge: "Шаг 2 из 7",
-    title: "Доход за день и кольцо плана",
+    title: "Доход за месяц и прогресс цели",
     description:
-      "Показывает, сколько вы уже заработали за сегодня от проведённых тренировок. Белое кольцо заполняется по мере приближения к дневному плану.",
+      "Показывает фактический доход за текущий месяц и полоску прогресса к вашей цели. Тап открывает экран финансов: графики, долги и экспорты.",
     tab: "day",
   },
   {
@@ -40,9 +40,9 @@ const STEPS: TutorialStep[] = [
   {
     target: '[data-tutorial="reminders-widget"]',
     badge: "Шаг 4 из 7",
-    title: "Умные напоминания",
+    title: "Напоминания-ссылки",
     description:
-      "Больше не нужно держать в голове, кто не оплатил и у кого кончается абонемент. Синяя стрелка справа позволяет сразу отметить оплату или открыть карточку клиента.",
+      "Каждое напоминание ведёт сразу туда, где нужно действовать: долг по тренировке — на экран «Финансы» с нужным должником, а абонемент или остаток занятий — в карточку клиента.",
     tab: "day",
   },
   {
@@ -50,7 +50,7 @@ const STEPS: TutorialStep[] = [
     badge: "Шаг 5 из 7",
     title: "Интерактивный таймлайн дня",
     description:
-      "Ядро приложения! Сверху линии — оплаченные клиенты, снизу — долги и отмены. Красная черта показывает точное время прямо сейчас. Блоки можно двигать долгим зажатием, а тап открывает меню быстрых действий.",
+      "Ядро приложения! Цвет блока — это статус: синий — запланировано, зелёный — проведено, жёлтый — ждёт оплаты, красный — долг. Синяя линия — время прямо сейчас. Блок можно перенести долгим зажатием, а кнопка в углу открывает большой вертикальный календарь с часами, неделей и быстрым добавлением записи.",
     tab: "day",
   },
   {
@@ -82,30 +82,61 @@ export default function AppTutorial({ open, onClose, onSwitchTab }: TutorialProp
 
   const step = STEPS[index];
 
-  // При переходе на шаг при необходимости переключаем вкладку и вычисляем координаты элемента
+  // Пока тур открыт — прокрутка страницы и дашборда заблокирована,
+  // иначе даже микро-скролл уводит элемент из-под маски.
   useEffect(() => {
     if (!open) return;
-    if (step.tab && onSwitchTab) {
-      onSwitchTab(step.tab);
-    }
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    const main = document.querySelector("main > div.no-scrollbar, main > div.overflow-hidden");
+    if (main) main.scrollTo({ top: 0, behavior: "auto" });
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, [open ]);
 
-    const updateRect = () => {
-      const el = document.querySelector(step.target);
-      if (el) {
-        const r = el.getBoundingClientRect();
-        setRect(r);
-        // Мягко скроллим к элементу, если он не в поле зрения
-        el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-      } else {
+  // Шаг тура: переключаем вкладку, подводим элемент БЕЗ анимации
+  // (иначе маска меряется по старым координатам) и дальше просто держим подсветку
+  // приклеенной: прямоугольник пересчитывается каждый кадр, поэтому любая
+  // прокрутка контейнера — внутренняя или страницы — не сбивает маску.
+  useEffect(() => {
+    if (!open) return;
+    if (step.tab && onSwitchTab) onSwitchTab(step.tab);
+
+    const el = document.querySelector(step.target);
+    if (el) el.scrollIntoView({ behavior: "auto", block: "nearest", inline: "nearest" });
+
+    let raf = 0;
+    let last: DOMRect | null = null;
+    const tick = () => {
+      const node = document.querySelector(step.target);
+      if (node) {
+        const r = node.getBoundingClientRect();
+        if (
+          !last ||
+          Math.abs(last.left - r.left) > 0.5 ||
+          Math.abs(last.top - r.top) > 0.5 ||
+          Math.abs(last.width - r.width) > 0.5 ||
+          Math.abs(last.height - r.height) > 0.5
+        ) {
+          last = r;
+          setRect(r);
+        }
+      } else if (last !== null) {
+        last = null;
         setRect(null);
       }
+      raf = requestAnimationFrame(tick);
     };
+    raf = requestAnimationFrame(tick);
+    window.addEventListener("resize", tick);
 
-    const timer = setTimeout(updateRect, 150);
-    window.addEventListener("resize", updateRect);
     return () => {
-      clearTimeout(timer);
-      window.removeEventListener("resize", updateRect);
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", tick);
     };
   }, [open, index, step, onSwitchTab]);
 
@@ -164,7 +195,7 @@ export default function AppTutorial({ open, onClose, onSwitchTab }: TutorialProp
       {/* Светящаяся рамка вокруг целевого элемента */}
       {rect && (
         <div
-          className="absolute pointer-events-none transition-all duration-300 rounded-[24px] ring-4 ring-sky-400 ring-offset-2 ring-offset-transparent shadow-[0_0_25px_rgba(56,189,248,0.7)]"
+          className="absolute pointer-events-none transition-all duration-300 rounded-[24px] ring-4 ring-[#4A5BF0] ring-offset-2 ring-offset-transparent shadow-[0_0_25px_rgba(56,189,248,0.7)]"
           style={{
             left: Math.max(4, rect.left - 6),
             top: Math.max(4, rect.top - 6),
@@ -174,26 +205,7 @@ export default function AppTutorial({ open, onClose, onSwitchTab }: TutorialProp
         />
       )}
 
-      {/* Верхний бар с кнопкой пропуска */}
-      <div className="relative z-10 flex items-center justify-between p-4 pt-[max(env(safe-area-inset-top),16px)]">
-        <span className="rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-xs font-semibold text-white">
-          Интерактивный тур
-        </span>
-        <button
-          type="button"
-          onClick={() => {
-            haptic("select");
-            onClose();
-            setIndex(0);
-          }}
-          className="flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3 py-1.5 text-xs font-bold text-white transition active:scale-95"
-        >
-          <span>Пропустить</span>
-          <IconClose className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      {/* Карточка-подсказка */}
+      {/* Карточка-подсказка (кнопка закрытия перенесена внутрь, чтобы не перекрывать шапку с датой) */}
       <div
         className={`relative z-10 mx-auto w-full max-w-sm px-4 transition-all duration-300 ${
           isBottomHalf ? "mt-4" : "mt-auto mb-[max(env(safe-area-inset-bottom),20px)]"
@@ -201,25 +213,39 @@ export default function AppTutorial({ open, onClose, onSwitchTab }: TutorialProp
       >
         <div className="rounded-[28px] bg-white p-5 shadow-2xl ring-1 ring-black/5 animate-fade-in">
           <div className="flex items-center justify-between">
-            <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-700">
+            <span className="rounded-full bg-[#EEF1FF] px-2.5 py-0.5 text-[11px] font-bold text-[#4A5BF0]">
               {step.badge}
             </span>
-            <div className="flex gap-1">
-              {STEPS.map((_, i) => (
-                <span
-                  key={i}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === index ? "w-5 bg-sky-500" : "w-1.5 bg-slate-200"
-                  }`}
-                />
-              ))}
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1">
+                {STEPS.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i === index ? "w-5 bg-[#4A5BF0]" : "w-1.5 bg-[#E7EAF3]"
+                    }`}
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  haptic("select");
+                  onClose();
+                  setIndex(0);
+                }}
+                aria-label="Закрыть тур"
+                className="grid h-7 w-7 place-items-center rounded-full bg-[#F1F3F9] text-[#5C6B86] hover:text-[#0F1C33] transition active:scale-90"
+              >
+                <IconClose className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
 
-          <h3 className="mt-2.5 text-lg font-bold text-slate-900 leading-snug">
+          <h3 className="mt-2.5 text-lg font-bold text-[#0F1C33] leading-snug">
             {step.title}
           </h3>
-          <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">
+          <p className="mt-1.5 text-sm text-[#5C6B86] leading-relaxed">
             {step.description}
           </p>
 
@@ -228,7 +254,7 @@ export default function AppTutorial({ open, onClose, onSwitchTab }: TutorialProp
               <button
                 type="button"
                 onClick={prev}
-                className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-100 text-slate-700 active:scale-95 transition"
+                className="grid h-11 w-11 place-items-center rounded-2xl bg-[#F1F3F9] text-[#5C6B86] active:scale-95 transition"
                 aria-label="Назад"
               >
                 <IconChevronLeft className="h-5 w-5" />
@@ -237,7 +263,8 @@ export default function AppTutorial({ open, onClose, onSwitchTab }: TutorialProp
             <button
               type="button"
               onClick={next}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl py-3 text-sm font-bold text-white shadow-lg shadow-sky-500/25 active:scale-95 transition"
+              aria-label={isLast ? "Всё понятно, начать" : "Дальше"}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl py-3 text-sm font-bold text-white shadow-lg shadow-[#4A5BF0]/25 active:scale-95 transition"
               style={{ background: "var(--ios-blue)" }}
             >
               <span>{isLast ? "Всё понятно, начать!" : "Дальше"}</span>

@@ -10,23 +10,21 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Trainer Timeline",
-  description: "Дашборд тренера: таймлайн дня, доход, абонементы и напоминания.",
+  title: "PragmaBox — рабочий день тренера",
+  description: "PragmaBox: расписание, клиенты, финансы и прогресс тренера в одном приложении.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#fff1e8",
+  themeColor: "#4A5BF0",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    // Тема Коралл фиксирована
-    <html lang="ru" data-theme="coral" className={inter.variable}>
+    <html lang="ru" data-theme="fintech" className={inter.variable}>
       <body className="min-h-dvh antialiased">
-        {/* Telegram Mini App SDK: без него приложение работает и в браузере */}
         <script src="https://telegram.org/js/telegram-web-app.js" async />
         {children}
       </body>

@@ -153,9 +153,9 @@ export default function ClientDetail({
           {initials(client.name)}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-bold text-slate-900">{client.name}</p>
-          {client.phone && <p className="truncate text-xs text-slate-500">{client.phone}</p>}
-          <p className="mt-1 text-[11px] text-slate-500">
+          <p className="truncate text-lg font-bold text-[#0F1C33]">{client.name}</p>
+          {client.phone && <p className="truncate text-xs text-[#5C6B86]">{client.phone}</p>}
+          <p className="mt-1 text-[11px] text-[#5C6B86]">
             Проведено {done.length} · {mine.length} замеров
           </p>
         </div>
@@ -163,16 +163,16 @@ export default function ClientDetail({
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-[20px] bg-white p-3.5 shadow-sm">
-          <p className="text-[11px] text-slate-500">Абонемент</p>
+          <p className="text-[11px] text-[#5C6B86]">Абонемент</p>
           {pkg ? (
             <>
-              <p className="mt-1 text-lg font-bold tabular-nums text-slate-900">
+              <p className="mt-1 text-lg font-bold tabular-nums text-[#0F1C33]">
                 {pkg.remainingSessions}
-                <span className="text-sm font-medium text-slate-400"> из {pkg.totalSessions}</span>
+                <span className="text-sm font-medium text-[#9AA6BE]"> из {pkg.totalSessions}</span>
               </p>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#F1F3F9]">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-sky-400 to-violet-400"
+                  className="h-full rounded-full bg-gradient-to-r from-[#4A5BF0] to-[#4A5BF0]"
                   style={{
                     width: `${Math.round(((pkg.totalSessions - pkg.remainingSessions) / pkg.totalSessions) * 100)}%`,
                   }}
@@ -183,7 +183,7 @@ export default function ClientDetail({
                 onClick={togglePkgPaid}
                 disabled={busy}
                 className={`mt-2 w-full rounded-lg px-2 py-1 text-[11px] font-semibold ${
-                  pkg.paid ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-700"
+                  pkg.paid ? "bg-[#E5F7EC] text-[#0E7A47]" : "bg-[#FDECEF] text-[#B4232E]"
                 }`}
               >
                 {pkg.paid ? "Оплачен ✓" : "Не оплачен"}
@@ -194,7 +194,7 @@ export default function ClientDetail({
               type="button"
               onClick={addPackage}
               disabled={busy}
-              className="mt-2 w-full rounded-lg bg-slate-900 py-1.5 text-[11px] font-semibold text-white"
+              className="mt-2 w-full rounded-lg bg-[#4A5BF0] py-1.5 text-[11px] font-semibold text-white"
             >
               + Абонемент
             </button>
@@ -202,21 +202,21 @@ export default function ClientDetail({
         </div>
 
         <div className="rounded-[20px] bg-white p-3.5 shadow-sm">
-          <p className="text-[11px] text-slate-500">Долг</p>
+          <p className="text-[11px] text-[#5C6B86]">Долг</p>
           <p
-            className={`mt-1 text-lg font-bold tabular-nums ${debt > 0 ? "text-rose-600" : "text-slate-900"}`}
+            className={`mt-1 text-lg font-bold tabular-nums ${debt > 0 ? "text-[#F04452]" : "text-[#0F1C33]"}`}
           >
             {debt > 0 ? fmtMoney(debt) : "нет"}
           </p>
           {pkg?.expiresAt && (
-            <p className="mt-2 text-[11px] text-slate-500">
+            <p className="mt-2 text-[11px] text-[#5C6B86]">
               Абонемент до {fmtShortDate(parseDayKey(pkg.expiresAt))}
             </p>
           )}
         </div>
       </div>
 
-      <div className="flex rounded-[18px] bg-slate-200/60 p-0.5">
+      <div className="flex rounded-[18px] bg-[#E7EAF3] p-0.5">
         {(
           [
             ["stats", "Показатели"],
@@ -229,7 +229,7 @@ export default function ClientDetail({
             type="button"
             onClick={() => setView(key)}
             className={`flex-1 rounded-[16px] py-2 text-xs font-semibold transition ${
-              view === key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+              view === key ? "bg-white text-[#0F1C33] shadow-sm" : "text-[#5C6B86]"
             }`}
           >
             {label}
@@ -241,9 +241,9 @@ export default function ClientDetail({
         <>
           {mine.length === 0 ? (
             <div className="rounded-[22px] bg-white p-6 text-center shadow-sm">
-              <IconRuler className="mx-auto h-7 w-7 text-slate-300" />
-              <p className="mt-2 text-sm font-semibold text-slate-900">Замеров ещё нет</p>
-              <p className="mt-1 text-xs text-slate-500">
+              <IconRuler className="mx-auto h-7 w-7 text-[#C4CCDD]" />
+              <p className="mt-2 text-sm font-semibold text-[#0F1C33]">Замеров ещё нет</p>
+              <p className="mt-1 text-xs text-[#5C6B86]">
                 Добавь первый — и здесь появятся графики прогресса
               </p>
             </div>
@@ -265,21 +265,21 @@ export default function ClientDetail({
                       }`}
                       style={active ? { boxShadow: `0 0 0 2px ${m.color}` } : undefined}
                     >
-                      <p className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                      <p className="flex items-center gap-1.5 text-[11px] text-[#5C6B86]">
                         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: m.color }} />
                         {m.label}
                       </p>
-                      <p className="mt-1 text-[17px] font-bold tabular-nums text-slate-900">
+                      <p className="mt-1 text-[17px] font-bold tabular-nums text-[#0F1C33]">
                         {fmtMetric(info.value, m)}
                       </p>
                       {info.delta !== null && (
                         <p
                           className={`text-[11px] font-semibold tabular-nums ${
                             tone === "good"
-                              ? "text-emerald-600"
+                              ? "text-[#1DB871]"
                               : tone === "bad"
-                                ? "text-rose-600"
-                                : "text-slate-400"
+                                ? "text-[#F04452]"
+                                : "text-[#9AA6BE]"
                           }`}
                         >
                           {fmtDelta(info.delta, m)}
@@ -292,15 +292,15 @@ export default function ClientDetail({
 
               <section className="rounded-[22px] bg-white p-4 shadow-sm">
                 <div className="mb-3 flex items-center justify-between gap-2">
-                  <h3 className="truncate text-sm font-bold text-slate-900">{def.label}</h3>
-                  <div className="flex shrink-0 rounded-full bg-slate-100 p-0.5">
+                  <h3 className="truncate text-sm font-bold text-[#0F1C33]">{def.label}</h3>
+                  <div className="flex shrink-0 rounded-full bg-[#F1F3F9] p-0.5">
                     {PERIODS.map((p) => (
                       <button
                         key={p.key}
                         type="button"
                         onClick={() => setPeriod(p.key)}
                         className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
-                          period === p.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                          period === p.key ? "bg-white text-[#0F1C33] shadow-sm" : "text-[#5C6B86]"
                         }`}
                       >
                         {p.label}
@@ -318,34 +318,34 @@ export default function ClientDetail({
       {view === "history" && (
         <section className="rounded-[22px] bg-white p-4 shadow-sm">
           {mine.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-500">Замеров ещё нет</p>
+            <p className="py-6 text-center text-sm text-[#5C6B86]">Замеров ещё нет</p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-[#EFF1F6]">
               {[...mine]
                 .sort((a, b) => b.takenOn.localeCompare(a.takenOn))
                 .map((m) => (
                   <li key={m.id} className="py-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold text-slate-900">
+                      <span className="text-sm font-semibold text-[#0F1C33]">
                         {fmtShortDate(parseDayKey(m.takenOn))}
                       </span>
                       <button
                         type="button"
                         disabled={busy}
                         onClick={() => removeMeasurement(m.id)}
-                        className="text-[11px] font-medium text-slate-400"
+                        className="text-[11px] font-medium text-[#9AA6BE]"
                       >
                         удалить
                       </button>
                     </div>
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                       {METRICS.filter((d) => m[d.key] !== null).map((d) => (
-                        <span key={d.key} className="text-[11px] tabular-nums text-slate-600">
-                          {d.short} <b className="text-slate-900">{m[d.key]}</b> {d.unit}
+                        <span key={d.key} className="text-[11px] tabular-nums text-[#5C6B86]">
+                          {d.short} <b className="text-[#0F1C33]">{m[d.key]}</b> {d.unit}
                         </span>
                       ))}
                     </div>
-                    {m.note && <p className="mt-1 text-[11px] text-slate-500">{m.note}</p>}
+                    {m.note && <p className="mt-1 text-[11px] text-[#5C6B86]">{m.note}</p>}
                   </li>
                 ))}
             </ul>
@@ -354,7 +354,7 @@ export default function ClientDetail({
             <button
               type="button"
               onClick={exportCsv}
-              className="mt-3 w-full rounded-xl bg-slate-100 py-2.5 text-xs font-semibold text-slate-700"
+              className="mt-3 w-full rounded-xl bg-[#F1F3F9] py-2.5 text-xs font-semibold text-[#5C6B86]"
             >
               Выгрузить таблицей (CSV)
             </button>
@@ -365,16 +365,16 @@ export default function ClientDetail({
       {view === "visits" && (
         <section className="rounded-[22px] bg-white p-4 shadow-sm">
           {sessions.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-500">Тренировок пока нет</p>
+            <p className="py-6 text-center text-sm text-[#5C6B86]">Тренировок пока нет</p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-[#EFF1F6]">
               {sessions.slice(0, 40).map((s) => (
                 <li key={s.id} className="flex items-center justify-between gap-2 py-2.5">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-[#0F1C33]">
                       {fmtShortDate(new Date(s.startsAt))}
                     </p>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-[#5C6B86]">
                       {s.status === "done"
                         ? "проведена"
                         : s.status === "planned"
@@ -386,7 +386,7 @@ export default function ClientDetail({
                   </div>
                   <span
                     className={`shrink-0 text-xs font-semibold tabular-nums ${
-                      s.price === 0 ? "text-slate-400" : s.paid ? "text-emerald-600" : "text-rose-600"
+                      s.price === 0 ? "text-[#9AA6BE]" : s.paid ? "text-[#1DB871]" : "text-[#F04452]"
                     }`}
                   >
                     {s.price === 0 ? "—" : fmtMoney(s.price)}

@@ -12,6 +12,10 @@ export interface TrainerInfo {
   username: string | null;
   photoUrl: string | null;
   isDemo: boolean;
+  subscriptionTier: string;
+  monthlyGoal: number;
+  avgSessionPrice: number;
+  onboardingComplete: boolean;
 }
 
 const encode = (d: Date) => encodeURIComponent(d.toISOString());
@@ -64,7 +68,9 @@ export function useAppData() {
       const dayEnd = addDays(day, 1);
       const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 1);
       const histFrom = addDays(today, -400);
-      const histTo = dayEnd.getTime() > monthEnd.getTime() ? dayEnd : monthEnd;
+      // Захватываем неделю вперёд: карта показывает неделю целиком
+      const weekEnd = addDays(day, 8);
+      const histTo = weekEnd.getTime() > monthEnd.getTime() ? weekEnd : monthEnd;
 
       try {
         const [d, h, c, ms, m] = await Promise.all([
@@ -100,6 +106,30 @@ export function useAppData() {
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
+  // Мгновенное оптимистичное обновление сессий в памяти (без ожидания ответа сервера)
+  const optimisticUpdateSession = useCallback((id: number, updates: Partial<SessionDTO>) => {
+    setDaySessions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
+    );
+    setHistory((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
+    );
+  }, []);
+
+  const optimisticDeleteSession = useCallback((id: number) => {
+    setDaySessions((prev) => prev.filter((s) => s.id !== id));
+    setHistory((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  const optimisticUpdatePackage = useCallback((pkgId: number, updates: Partial<ClientDTO["packages"][number]>) => {
+    setClients((prev) =>
+      prev.map((c) => ({
+        ...c,
+        packages: c.packages.map((p) => (p.id === pkgId ? { ...p, ...updates } : p)),
+      }))
+    );
+  }, []);
+
   return {
     now,
     todayKey,
@@ -115,6 +145,9 @@ export function useAppData() {
     error,
     authError,
     reload,
+    optimisticUpdateSession,
+    optimisticDeleteSession,
+    optimisticUpdatePackage,
   };
 }
 

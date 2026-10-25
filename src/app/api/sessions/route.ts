@@ -2,9 +2,12 @@ import { and, desc, eq, gt, gte, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { clients, packages, sessions } from "@/db/schema";
 import { isKindKey, isMuscleKey } from "@/lib/config";
+import { clientLimitForTier } from "@/lib/subscription";
 import { withTrainer } from "@/lib/server/auth";
 import {
   badRequest,
+  clientLimitResponse,
+  countTrainerClients,
   loadSession,
   loadSessions,
   ownsClient,
@@ -44,6 +47,10 @@ export function POST(req: Request) {
     } else {
       const name = toText(body.newClientName);
       if (!name) return badRequest("Выбери клиента или введи имя нового");
+      const limit = clientLimitForTier(trainer.subscriptionTier);
+      if (limit !== null && (await countTrainerClients(trainer.id)) >= limit) {
+        return clientLimitResponse(limit);
+      }
       const [created] = await db
         .insert(clients)
         .values({ trainerId: trainer.id, name })

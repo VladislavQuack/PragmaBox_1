@@ -12,62 +12,77 @@ interface SessionActionsProps {
   onChanged: () => void;
   onEdit: () => void;
   onToast: (msg: string) => void;
+  onOptimisticUpdate?: (id: number, updates: Partial<SessionDTO>) => void;
+  onOptimisticDelete?: (id: number) => void;
 }
 
 type Tone = "ok" | "info" | "muted" | "bad";
 
 const TONE_BTN: Record<Tone, string> = {
-  ok: "bg-emerald-500 text-white shadow-emerald-500/30",
-  info: "bg-sky-500 text-white shadow-sky-500/30",
-  muted: "bg-white text-slate-700 border border-slate-200",
-  bad: "bg-rose-500 text-white shadow-rose-500/30",
+  ok: "bg-[#1DB871] text-white shadow-[#1DB871]/30",
+  info: "bg-[#4A5BF0] text-white shadow-[#4A5BF0]/30",
+  muted: "bg-white text-[#5C6B86] border border-[#E0E5F1]",
+  bad: "bg-[#F04452] text-white shadow-[#F04452]/30",
 };
 
-export default function SessionActions({ session: s, onChanged, onEdit, onToast }: SessionActionsProps) {
+export default function SessionActions({
+  session: s,
+  onClose,
+  onChanged,
+  onEdit,
+  onToast,
+  onOptimisticUpdate,
+  onOptimisticDelete,
+}: SessionActionsProps) {
   const [busy, setBusy] = useState(false);
   const startMin = minuteOfDay(new Date(s.startsAt));
   const muscle = isMuscleKey(s.muscleGroup) ? MUSCLE_GROUPS[s.muscleGroup].label : "—";
   const kind = isKindKey(s.kind) ? KINDS[s.kind] : "—";
 
   const run = async (body: Record<string, unknown>, msg: string) => {
-    setBusy(true);
+    // Мгновенное обновление в памяти
+    if (onOptimisticUpdate) {
+      onOptimisticUpdate(s.id, body as Partial<SessionDTO>);
+    }
+    onToast(msg);
+    onClose();
+
     try {
       await patch(`/api/sessions/${s.id}`, body);
-      onToast(msg);
-      onChanged();
     } catch (e) {
-      onToast(e instanceof Error ? e.message : "Ошибка");
-    } finally {
-      setBusy(false);
+      onToast(e instanceof Error ? e.message : "Ошибка сохранения");
+      onChanged();
     }
   };
 
   const remove = async () => {
     if (!window.confirm("Удалить тренировку?")) return;
-    setBusy(true);
+    if (onOptimisticDelete) {
+      onOptimisticDelete(s.id);
+    }
+    onToast("Тренировка удалена");
+    onClose();
+
     try {
       await del(`/api/sessions/${s.id}`);
-      onToast("Тренировка удалена");
-      onChanged();
     } catch (e) {
-      onToast(e instanceof Error ? e.message : "Ошибка");
-    } finally {
-      setBusy(false);
+      onToast(e instanceof Error ? e.message : "Ошибка удаления");
+      onChanged();
     }
   };
 
   return (
     <div className="space-y-4">
       <div className="rounded-3xl bg-white p-4 shadow-sm">
-        <p className="text-xs font-medium text-slate-500">
+        <p className="text-xs font-medium text-[#5C6B86]">
           {fmtMinute(startMin)} – {fmtMinute(startMin + s.durationMin)} · {fmtDuration(s.durationMin)}
         </p>
-        <p className="mt-1 text-xl font-semibold text-slate-900">{s.clientName}</p>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-xl font-semibold text-[#0F1C33]">{s.clientName}</p>
+        <p className="mt-1 text-sm text-[#5C6B86]">
           {muscle} · {kind} · {fmtMoney(s.price)} · {s.paid ? "оплачено" : "не оплачено"}
         </p>
         {s.remainingSessions !== null && (
-          <p className="mt-2 inline-block rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+          <p className="mt-2 inline-block rounded-full bg-[#F1F3F9] px-2.5 py-1 text-xs font-medium text-[#5C6B86]">
             В абонементе осталось: {s.remainingSessions}
           </p>
         )}
@@ -98,7 +113,7 @@ export default function SessionActions({ session: s, onChanged, onEdit, onToast 
         <button
           type="button"
           onClick={onEdit}
-          className="rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700"
+          className="rounded-2xl border border-[#E0E5F1] bg-white py-3 text-sm font-semibold text-[#5C6B86]"
         >
           ✏️ Изменить
         </button>
@@ -106,7 +121,7 @@ export default function SessionActions({ session: s, onChanged, onEdit, onToast 
           type="button"
           onClick={remove}
           disabled={busy}
-          className="rounded-2xl border border-rose-200 bg-rose-50 py-3 text-sm font-semibold text-rose-700"
+          className="rounded-2xl border border-[#F3C2C7] bg-[#FDECEF] py-3 text-sm font-semibold text-[#B4232E]"
         >
           🗑 Удалить
         </button>

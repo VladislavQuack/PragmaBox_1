@@ -30,7 +30,7 @@ export function DonutChart({
     <div className="flex items-center gap-4">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
         <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth={18} />
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E7EAF3" strokeWidth={18} />
           {total > 0 &&
             slices.map((s) => {
               if (s.value <= 0) return null;
@@ -58,12 +58,12 @@ export function DonutChart({
           x="50%"
           y="47%"
           textAnchor="middle"
-          className="fill-slate-900 text-[15px] font-bold"
+          className="fill-[#0F1C33] text-[15px] font-bold"
           style={{ fontVariantNumeric: "tabular-nums" }}
         >
           {centerTop}
         </text>
-        <text x="50%" y="62%" textAnchor="middle" className="fill-slate-500 text-[10px]">
+        <text x="50%" y="62%" textAnchor="middle" className="fill-[#5C6B86] text-[10px]">
           {centerBottom}
         </text>
       </svg>
@@ -74,8 +74,8 @@ export function DonutChart({
           return (
             <li key={s.label} className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-              <span className="min-w-0 flex-1 truncate text-xs text-slate-600">{s.label}</span>
-              <span className="shrink-0 text-xs font-bold tabular-nums text-slate-900">{pct}%</span>
+              <span className="min-w-0 flex-1 truncate text-xs text-[#5C6B86]">{s.label}</span>
+              <span className="shrink-0 text-xs font-bold tabular-nums text-[#0F1C33]">{pct}%</span>
             </li>
           );
         })}
@@ -98,7 +98,7 @@ export function LineChart({
 }) {
   if (points.length === 0) {
     return (
-      <p className="py-10 text-center text-sm text-slate-500">
+      <p className="py-10 text-center text-sm text-[#5C6B86]">
         Нет данных за этот период
       </p>
     );
@@ -138,7 +138,7 @@ export function LineChart({
             x2={w - padX}
             y1={padTop + plotH * t}
             y2={padTop + plotH * t}
-            stroke="#e2e8f0"
+            stroke="#E7EAF3"
             strokeWidth="1"
             strokeDasharray="3 4"
           />
@@ -159,14 +159,14 @@ export function LineChart({
               x={x(i)}
               y={height - 8}
               textAnchor="middle"
-              className="fill-slate-400 text-[9px]"
+              className="fill-[#9AA6BE] text-[9px]"
             >
               {points.length > 8 && i % 2 === 1 ? "" : p.label}
             </text>
           </g>
         ))}
       </svg>
-      <div className="flex justify-between px-1 text-[10px] tabular-nums text-slate-400">
+      <div className="flex justify-between px-1 text-[10px] tabular-nums text-[#9AA6BE]">
         <span>
           мин {Math.round(min * 10) / 10} {unit}
         </span>

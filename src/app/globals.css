@@ -2,48 +2,62 @@
 
 :root {
   color-scheme: light;
-  /* В Telegram берём стабильную высоту окна мини-аппа, в браузере — динамическую высоту экрана */
   --app-h: var(--tg-viewport-stable-height, 100dvh);
 
-  /* Системные цвета iOS */
-  --ios-blue: #007aff;
-  --ios-green: #34c759;
-  --ios-red: #ff3b30;
-  --ios-pink: #ff2d55;
-  --ios-yellow: #ffcc00;
-  --ios-orange: #ff9500;
-  --ios-purple: #af52de;
-  --ios-teal: #30b0c7;
+  /* Fintech palette — фиолетовый из Figma */
+  --brand: #4a5bf0;
+  --brand-deep: #3d4edb;
+  --brand-soft: #ecefff;
 
-  /* Нейтральные заливки iOS */
-  --fill-1: #fff5ee;
-  --fill-2: #ffe7db;
-  --fill-3: #ffd5c2;
-  --label: #2c1206;
-  --label-2: #643825;
-  --label-3: #9b6c56;
+  --bg: #f1f3f9;
+  --card: #ffffff;
+  --line: #e6eaf3;
+  --ink: #0f1c33;
+  --ink-2: #5c6b86;
+  --ink-3: #9aa6be;
 
-  /* Фиксированная тёплая тема «Коралл» */
-  --app-bg: #fff1e8;
-  --app-bg-image:
-    radial-gradient(65% 50% at 4% 0%, rgba(254, 215, 170, 0.65) 0%, transparent 68%),
-    radial-gradient(55% 42% at 100% 6%, rgba(251, 146, 60, 0.3) 0%, transparent 65%),
-    radial-gradient(70% 55% at 50% 100%, rgba(253, 186, 116, 0.45) 0%, transparent 70%);
-  --on-bg: #3d1405;
-  --on-bg-dim: rgba(130, 50, 20, 0.7);
+  --ok: #1db871;
+  --bad: #f04452;
+  --warn: #ff9f0a;
+
+  /* ── Figma: фиолетовый градиент и шум ─────────────────────────
+     Radial: 0% #4A5BF0 → 43% #5262F7 → 100% #9BA5FF, фокус у нижнего левого края.
+     Noise: multi (цветной), size ~1.77px, density 100%, opacity 25%. */
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' seed='7'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.25'/%3E%3C/svg%3E");
+  --grad-purple: radial-gradient(141% 141% at 0% 100%, #4a5bf0 0%, #5262f7 43%, #9ba5ff 100%);
+  --grad-purple-soft: linear-gradient(135deg, #4a5bf0 0%, #5262f7 43%, #9ba5ff 100%);
+
+  /* Совместимость со старыми var(--ios-*) */
+  --ios-blue: #4a5bf0;
+  --ios-green: #1db871;
+  --ios-red: #f04452;
+  --ios-pink: #4a5bf0;
+  --ios-yellow: #ffb020;
+  --ios-orange: #ff9f0a;
+  --ios-purple: #7a6ff0;
+  --ios-teal: #22b8cf;
+
+  --fill-1: #f1f3f9;
+  --fill-2: #e6eaf3;
+  --fill-3: #d3d9e8;
+  --label: #0f1c33;
+  --label-2: #5c6b86;
+  --label-3: #9aa6be;
+
   --card-bg: #ffffff;
-  --card-border: rgba(251, 146, 60, 0.18);
-  --card-shadow: 0 4px 18px -6px rgba(124, 45, 18, 0.12), 0 1px 3px rgba(124, 45, 18, 0.05);
-  --chip-bg: #ea580c;
-  --chip-fg: #ffffff;
-  --segment-bg: rgba(234, 88, 12, 0.09);
+  --card-border: #e6eaf3;
+  --card-shadow: 0 2px 14px -6px rgba(16, 28, 60, 0.14);
+  --on-bg: #ffffff;
+  --on-bg-dim: rgba(255, 255, 255, 0.72);
+  --chip-bg: #ffffff;
+  --chip-fg: #3b5cff;
+  --segment-bg: rgba(255, 255, 255, 0.16);
 }
 
 html,
 body {
   scrollbar-width: none;
 }
-
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   display: none;
@@ -52,76 +66,228 @@ body::-webkit-scrollbar {
 .app-screen {
   min-height: var(--app-h);
   height: var(--app-h);
-}
-
-@media (max-height: 620px) {
-  .app-screen {
-    height: auto;
-  }
+  overflow: hidden;
 }
 
 body {
-  background-color: var(--app-bg);
-  background-image: var(--app-bg-image);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(60% 36% at 100% 100%, rgba(59, 92, 255, 0.08) 0%, transparent 70%),
+    radial-gradient(50% 30% at 0% 62%, rgba(150, 120, 255, 0.07) 0%, transparent 70%);
   background-attachment: fixed;
-  color: var(--label);
+  color: var(--ink);
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;
-  transition: background-color 0.35s ease;
 }
 
-/* ───── Карточки в стиле iOS ───── */
+/* ───── Карточки ───── */
 .glass,
-.glass-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+.glass-card,
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
   box-shadow: var(--card-shadow);
 }
-
-/* Карточка с толстой цветной рамкой, как в макете */
 .frame-card {
-  background: var(--frame-fill, #fff);
-  border: 3px solid var(--frame-color, var(--ios-blue));
-  border-radius: 30px;
-  box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(170deg, #ffffff 55%, #f6f8ff 100%);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: var(--card-shadow);
 }
-
-/* Крупные плитки-виджеты: squircle, живой градиент */
 .tile {
-  border-radius: 30px;
-  box-shadow: 0 12px 28px -10px var(--tile-shadow, rgba(0, 0, 0, 0.35));
-  transition: transform 0.14s ease, box-shadow 0.2s ease;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.14s ease;
   will-change: transform;
 }
-
 .tile:active {
   transform: scale(0.97);
 }
 
-/* Светлые статичные градиенты в стиле iOS (без анимации) */
-.tile-income-gradient {
-  background: linear-gradient(145deg, #5eead4 0%, #34d399 30%, #34c759 62%, #4cd964 100%);
+/* ───── Градиенты (статичные, без анимации) ───── */
+/* Основная фиолетовая поверхность: радиал из Figma + зерно шума 25% через blend.
+   Шум лежит в слое фона, поэтому накладывается только на градиент, а текст остаётся чистым. */
+.hero-blue {
+  background-color: #4a5bf0;
+  background-image: var(--noise), var(--grad-purple);
+  background-size: 140px 140px, cover;
+  background-position: 0 0, 0 0;
+  background-blend-mode: overlay, normal;
+}
+/* Мелкие акцентные поверхности (иконки, кнопки, полоски) */
+.grad-purple {
+  background-color: #4a5bf0;
+  background-image: var(--noise), var(--grad-purple-soft);
+  background-size: 140px 140px, cover;
+  background-blend-mode: overlay, normal;
+}
+.hero-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1.2px, transparent 1.2px);
+  background-size: 18px 18px;
+}
+.card-tint-green {
+  background: linear-gradient(155deg, #ffffff 38%, #e2f8ec 100%);
+}
+.card-tint-blue {
+  background: linear-gradient(155deg, #ffffff 38%, #e6ebff 100%);
+}
+.card-tint-amber {
+  background: linear-gradient(155deg, #ffffff 42%, #fff1d9 100%);
+}
+.chip-green {
+  background: linear-gradient(135deg, #5be3a3 0%, #1db871 100%);
+  color: #fff;
+  box-shadow: 0 8px 16px -8px rgba(29, 184, 113, 0.75);
+}
+.chip-blue {
+  background-color: #4a5bf0;
+  background-image: var(--noise), var(--grad-purple-soft);
+  background-size: 140px 140px, cover;
+  background-blend-mode: overlay, normal;
+  color: #fff;
+  box-shadow: 0 8px 16px -8px rgba(74, 91, 240, 0.75);
+}
+.chip-amber {
+  background: linear-gradient(135deg, #ffc968 0%, #ff9f0a 100%);
+  color: #fff;
+  box-shadow: 0 8px 16px -8px rgba(255, 159, 10, 0.75);
+}
+.bar-grad {
+  background-color: #4a5bf0;
+  background-image: var(--noise), linear-gradient(180deg, #9ba5ff 0%, #5262f7 43%, #4a5bf0 100%);
+  background-size: 140px 140px, cover;
+  background-blend-mode: overlay, normal;
+}
+.nav-surface {
+  background: linear-gradient(180deg, #ffffff 0%, #f3f5fd 100%);
 }
 
-.tile-window-gradient {
-  background: linear-gradient(145deg, #7dd3fc 0%, #38bdf8 32%, #0a84ff 68%, #007aff 100%);
+/* Короткие экраны (≤700px по высоте): дашборд ужимается,
+   чтобы влезал без прокрутки — иначе микро-скролл ломал вёрстку тура. */
+@media (max-height: 700px) {
+  .tile {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-radius: 20px;
+    min-height: 0 !important;
+  }
+  /* На узком экране показываем главное напоминание, вторая строка уедет */
+  [data-tutorial="reminders-widget"] li:nth-of-type(2) {
+    display: none;
+  }
+  [data-tutorial="date-switcher"] button {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  /* Декоративная нижняя строка плиток прячется: основные цифры и подписи остаются */
+  [data-tile-foot] {
+    display: none;
+  }
+  .tile .num {
+    font-size: 21px;
+  }
+  /* Декоративные иконки плиток уменьшаем */
+  .tile [class~="h-9"] {
+    height: 30px;
+    width: 30px;
+  }
+  main > div.no-scrollbar {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+}
+
+/* На коротких телефонах шапка и сводка становятся компактнее,
+   чтобы таймлайн не схлопывался до узкой полосы. */
+@media (max-height: 600px) {
+  .app-screen > .hero-blue {
+    padding-bottom: 10px !important;
+  }
+  .app-screen [data-tutorial="date-switcher"] {
+    margin-top: 5px !important;
+  }
+  .app-screen [data-tutorial="date-switcher"] button {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  .app-screen [data-tutorial="date-switcher"] button > span:first-child {
+    font-size: 9px;
+  }
+  .app-screen [data-tutorial="date-switcher"] button > span:nth-child(2) {
+    font-size: 17px;
+  }
+  .app-screen > div.flex-1 {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .app-screen .tile {
+    padding: 7px 10px !important;
+    border-radius: 18px;
+  }
+  .app-screen .tile .num {
+    margin-top: 0 !important;
+    font-size: 18px !important;
+  }
+  .app-screen .tile [class~="h-9"] {
+    width: 25px;
+    height: 25px;
+  }
+  .app-screen [data-tutorial="reminders-widget"] {
+    padding: 8px 12px !important;
+  }
+  .app-screen [data-tutorial="reminders-widget"] > div:first-child {
+    margin-bottom: 0 !important;
+  }
+  .app-screen [data-tutorial="reminders-widget"] li {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  .app-screen > div:last-of-type:not(.hero-blue) {
+    padding-bottom: max(env(safe-area-inset-bottom), 7px) !important;
+    padding-top: 0 !important;
+  }
+  .app-screen [data-tutorial="bottom-nav"] button {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  .app-screen [data-tutorial="bottom-nav"] svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Все основные цветные поверхности получают мягкий градиент автоматически */
+[class~="bg-[#4A5BF0]"],
+[class~="bg-[#3B5CFF]"],
+[class~="bg-[var(--ios-blue)]"] {
+  background-color: #4a5bf0;
+  background-image: var(--noise), var(--grad-purple-soft);
+  background-size: 140px 140px, cover;
+  background-blend-mode: overlay, normal;
+}
+[class~="bg-[#1DB871]"] {
+  background-image: linear-gradient(135deg, #49d995 0%, #1db871 100%);
+}
+[class~="bg-[#F04452]"] {
+  background-image: linear-gradient(135deg, #ff7a85 0%, #f04452 100%);
+}
+[class~="bg-[#FF9F0A]"] {
+  background-image: linear-gradient(135deg, #ffc460 0%, #ff9f0a 100%);
 }
 
 .on-bg {
   color: var(--on-bg);
 }
-
 .on-bg-dim {
   color: var(--on-bg-dim);
 }
-
 .chip-accent {
   background: var(--chip-bg);
   color: var(--chip-fg);
 }
-
 .segment-track {
   background: var(--segment-bg);
 }
@@ -129,20 +295,30 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
-
 .no-scrollbar {
   scrollbar-width: none;
 }
-
 .tabular {
   font-variant-numeric: tabular-nums;
 }
-
-/* Крупные числа: плотные, с табличными цифрами */
 .num {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   font-weight: 800;
+}
+
+/* Блоки тренировок: зерно шума из Figma поверх градиента.
+   ВАЖНО: position здесь не задаём — его даёт класс absolute,
+   иначе правило без слоя перебьёт Tailwind и блоки «съедут». */
+.tl-block::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--noise);
+  background-size: 140px 140px;
+  mix-blend-mode: overlay;
 }
 
 @keyframes sheet-up {
@@ -153,7 +329,6 @@ body {
     transform: translateY(0);
   }
 }
-
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -162,11 +337,9 @@ body {
     opacity: 1;
   }
 }
-
 .animate-sheet-up {
   animation: sheet-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
@@ -174,11 +347,10 @@ body {
 /* ───── Мастер создания внутри таймлайна ───── */
 .wizard-surface {
   background:
-    radial-gradient(80% 60% at 100% 0%, rgba(255, 214, 224, 0.9) 0%, transparent 70%),
-    radial-gradient(70% 55% at 0% 100%, rgba(255, 237, 213, 0.85) 0%, transparent 70%),
+    radial-gradient(80% 60% at 100% 0%, rgba(59, 92, 255, 0.12) 0%, transparent 70%),
+    radial-gradient(70% 55% at 0% 100%, rgba(150, 120, 255, 0.1) 0%, transparent 70%),
     #ffffff;
 }
-
 @keyframes wizard-reveal {
   from {
     clip-path: circle(0% at var(--ox, 90%) var(--oy, 95%));
@@ -187,7 +359,6 @@ body {
     clip-path: circle(150% at var(--ox, 90%) var(--oy, 95%));
   }
 }
-
 @keyframes wizard-hide {
   from {
     clip-path: circle(150% at var(--ox, 90%) var(--oy, 95%));
@@ -196,11 +367,9 @@ body {
     clip-path: circle(0% at var(--ox, 90%) var(--oy, 95%));
   }
 }
-
 .wizard-reveal {
   animation: wizard-reveal 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) both;
 }
-
 .wizard-hide {
   animation: wizard-hide 0.34s cubic-bezier(0.5, 0, 0.75, 0) both;
 }
@@ -215,7 +384,6 @@ body {
     transform: translateX(0);
   }
 }
-
 @keyframes step-in-left {
   from {
     opacity: 0;
@@ -226,11 +394,9 @@ body {
     transform: translateX(0);
   }
 }
-
 .step-fwd {
   animation: step-in-right 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
-
 .step-back {
   animation: step-in-left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
@@ -245,11 +411,9 @@ body {
     transform: translateY(0) scale(1);
   }
 }
-
 .chip-pop {
   animation: chip-pop 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
-
 .step-title,
 .crumb {
   animation: fade-in 0.25s ease-out both;
@@ -258,17 +422,16 @@ body {
 @keyframes block-born {
   0% {
     transform: scale(0.6);
-    box-shadow: 0 0 0 0 rgba(255, 45, 85, 0.6);
+    box-shadow: 0 0 0 0 rgba(59, 92, 255, 0.55);
   }
   45% {
     transform: scale(1.08);
   }
   100% {
     transform: scale(1);
-    box-shadow: 0 0 0 10px rgba(255, 45, 85, 0);
+    box-shadow: 0 0 0 10px rgba(59, 92, 255, 0);
   }
 }
-
 .block-born {
   animation: block-born 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.15s both;
 }
@@ -279,7 +442,126 @@ body {
   .step-fwd,
   .step-back,
   .chip-pop,
-  .block-born {
+  .block-born,
+  .dash-enter-item {
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* ───── Плавное появление элементов дашборда 1 раз в сессию ───── */
+@keyframes dash-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dash-enter-item {
+  animation: dash-enter 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dash-enter-1 {
+  animation-delay: 0.03s;
+}
+
+.dash-enter-2 {
+  animation-delay: 0.08s;
+}
+
+.dash-enter-3 {
+  animation-delay: 0.13s;
+}
+
+.dash-enter-4 {
+  animation-delay: 0.18s;
+}
+
+/* ───── Экран настройки: элегантное кольцо загрузки и Apple Face ID галочка ───── */
+.setup-transition {
+  background-color: #4a5bf0;
+  background-image: var(--noise), var(--grad-purple);
+  background-size: 140px 140px, cover;
+  background-blend-mode: overlay, normal;
+  animation: setup-fade-in 0.3s ease-out both;
+}
+
+.setup-transition-glow {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  width: min(80vw, 320px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 70%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Анимация Face ID Pop */
+.faceid-pop {
+  animation: faceid-pop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+/* Рисование галочки */
+.faceid-checkmark {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: faceid-check-draw 0.42s cubic-bezier(0.65, 0, 0.35, 1) 0.12s forwards;
+}
+
+/* Пульсирующая волна успеха */
+.faceid-ripple {
+  animation: faceid-ripple 0.85s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes setup-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes faceid-pop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes faceid-check-draw {
+  0% {
+    stroke-dashoffset: 48;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes faceid-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setup-transition,
+  .faceid-pop,
+  .faceid-checkmark,
+  .faceid-ripple {
     animation-duration: 0.01ms !important;
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Reminder } from "@/lib/analytics";
+import { IconArrowRight, IconBell } from "@/components/ui/icons";
 
 interface RemindersWidgetProps {
   reminders: Reminder[];
@@ -8,9 +9,6 @@ interface RemindersWidgetProps {
   onAction: (r: Reminder) => void;
 }
 
-const PAY_KINDS = new Set(["unpaid", "pkg-unpaid"]);
-
-// Жёлтая рамка с «ярлычком» сверху, как в макете
 export default function RemindersWidget({ reminders, onOpen, onAction }: RemindersWidgetProps) {
   const top = reminders.slice(0, 2);
 
@@ -20,69 +18,68 @@ export default function RemindersWidget({ reminders, onOpen, onAction }: Reminde
       tabIndex={0}
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      className="frame-card relative cursor-pointer px-2.5 pb-2.5 pt-5"
-      style={{
-        ["--frame-color" as string]: "var(--ios-yellow)",
-        ["--frame-fill" as string]: "#fffdf2",
-      }}
+      className="tile card-tint-amber cursor-pointer p-4"
     >
-      <span
-        className="absolute -top-[14px] left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold text-black"
-        style={{ background: "var(--ios-yellow)" }}
-      >
-        Напоминания
-        {reminders.length > 0 && (
-          <span
-            className="grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[11px] font-bold text-white"
-            style={{ background: "var(--ios-blue)" }}
-          >
-            {reminders.length}
+      <div className="mb-1 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <span className="chip-amber grid h-9 w-9 place-items-center rounded-[13px]">
+            <IconBell className="h-5 w-5" />
           </span>
-        )}
-      </span>
+          <h3 className="text-[15px] font-bold text-[#0F1C33]">Напоминания</h3>
+          {reminders.length > 0 && (
+            <span className="grid h-[22px] min-w-[22px] place-items-center rounded-full bg-[#4A5BF0] px-1.5 text-[12px] font-bold text-white">
+              {reminders.length}
+            </span>
+          )}
+        </div>
+        <IconArrowRight className="h-4 w-4 text-[#C4CCDD]" />
+      </div>
 
       {top.length === 0 ? (
-        <p className="py-3 text-center text-sm text-[var(--label-3)]">Всё под контролем ✨</p>
+        <p className="py-2 text-sm text-[#9AA6BE]">Всё под контролем</p>
       ) : (
         <ul>
           {top.map((r, i) => (
             <li
               key={r.id}
-              className={`flex items-center gap-2 py-2 ${i > 0 ? "border-t border-black/[0.07]" : ""}`}
+              role="link"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAction(r);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onAction(r);
+                }
+              }}
+              className={`flex cursor-pointer items-center gap-2.5 py-2.5 transition active:opacity-70 ${i > 0 ? "border-t border-[#EFF1F6]" : ""}`}
             >
               <span
                 className="h-2 w-2 shrink-0 rounded-full"
-                style={{ background: r.tone === "bad" ? "var(--ios-red)" : "var(--label-3)" }}
+                style={{ background: r.tone === "bad" ? "#F04452" : r.tone === "warn" ? "#FF9F0A" : "#C4CCDD" }}
               />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-semibold leading-tight text-black">
+                <span className="block truncate text-[13px] font-semibold leading-tight text-[#0F1C33]">
                   {r.title}
                 </span>
-                <span className="block truncate text-[12px] leading-tight text-[var(--label-3)]">
-                  {r.sub}
-                </span>
+                <span className="block truncate text-[12px] leading-tight text-[#9AA6BE]">{r.sub}</span>
               </span>
-              <button
-                type="button"
-                aria-label={PAY_KINDS.has(r.kind) ? "Отметить оплату" : "Открыть клиента"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAction(r);
-                }}
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-[11px] text-white transition active:scale-90"
-                style={{ background: "var(--ios-blue)" }}
+              <span
+                aria-hidden="true"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#EEF1FF] text-[#4A5BF0]"
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M7 17 17 7M9 7h8v8" />
-                </svg>
-              </button>
+                <IconArrowRight className="h-4 w-4" />
+              </span>
             </li>
           ))}
         </ul>
       )}
 
       {reminders.length > top.length && (
-        <p className="pt-1 text-center text-[11px] font-semibold text-[var(--label-3)]">
+        <p className="pt-1 text-center text-[11px] font-semibold text-[#9AA6BE]">
           ещё {reminders.length - top.length}
         </p>
       )}

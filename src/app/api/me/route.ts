@@ -11,6 +11,10 @@ export function GET(req: Request) {
         username: trainer.username,
         photoUrl: trainer.photoUrl,
         isDemo: trainer.tgId === "demo",
+        subscriptionTier: trainer.subscriptionTier,
+        monthlyGoal: trainer.monthlyGoal,
+        avgSessionPrice: trainer.avgSessionPrice,
+        onboardingComplete: trainer.onboardingComplete,
       },
     }),
   );

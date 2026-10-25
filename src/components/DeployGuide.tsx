@@ -16,8 +16,8 @@ function CopyBox({ text, hint }: { text: string; hint?: string }) {
     }
   };
   return (
-    <div className="rounded-2xl bg-slate-900 p-3">
-      <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-[12px] leading-relaxed text-emerald-300">
+    <div className="rounded-2xl bg-[#4A5BF0] p-3">
+      <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-[12px] leading-relaxed text-[#7DE3A8]">
         {text}
       </pre>
       <button
@@ -27,7 +27,7 @@ function CopyBox({ text, hint }: { text: string; hint?: string }) {
       >
         {copied ? "Скопировано ✓" : "Скопировать"}
       </button>
-      {hint && <p className="mt-2 text-[11px] text-slate-400">{hint}</p>}
+      {hint && <p className="mt-2 text-[11px] text-[#9AA6BE]">{hint}</p>}
     </div>
   );
 }
@@ -47,13 +47,13 @@ export default function DeployGuide() {
       </header>
 
       <section className="mb-4 rounded-3xl bg-white/85 p-4 shadow-sm">
-        <h2 className="text-[15px] font-bold text-slate-900">Что получится</h2>
-        <ul className="mt-2 space-y-1 text-sm text-slate-700">
+        <h2 className="text-[15px] font-bold text-[#0F1C33]">Что получится</h2>
+        <ul className="mt-2 space-y-1 text-sm text-[#5C6B86]">
           <li>• адрес вида ritm-trainer.vercel.app с HTTPS;</li>
           <li>• отдельная база, данные не пропадают;</li>
           <li>• обновление сайта само после изменения кода.</li>
         </ul>
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-[#5C6B86]">
           Понадобится почта и аккаунт GitHub. Времени примерно 20–30 минут в первый раз.
         </p>
       </section>
@@ -86,7 +86,7 @@ export default function DeployGuide() {
             На github.com нажми <Code>New repository</Code>, имя — например{" "}
             <Code>ritm-trainer</Code>, тип <b>Private</b>.
           </p>
-          <p className="rounded-xl bg-amber-50 p-2.5 text-[13px] text-amber-900">
+          <p className="rounded-xl bg-amber-50 p-2.5 text-[13px] text-[#8A5A00]">
             Галочки <Code>Add a README</Code>, <Code>.gitignore</Code> и <Code>license</Code>{" "}
             <b>не ставь</b>. Репозиторий должен быть пустым, иначе при отправке будет конфликт.
           </p>
@@ -104,18 +104,18 @@ export default function DeployGuide() {
           <p>Проверь, что ты в нужном месте — в списке должен быть package.json:</p>
           <CopyBox text="ls" hint="На Windows в PowerShell — та же команда, работает." />
 
-          <p className="pt-1 font-semibold text-slate-900">Представься гиту (один раз на компьютере)</p>
+          <p className="pt-1 font-semibold text-[#0F1C33]">Представься гиту (один раз на компьютере)</p>
           <CopyBox
             text={'git config --global user.name "Твоё Имя"\ngit config --global user.email "почта@example.com"'}
             hint="Почту указывай ту же, что и в аккаунте GitHub."
           />
 
-          <p className="pt-1 font-semibold text-slate-900">Отправь проект</p>
+          <p className="pt-1 font-semibold text-[#0F1C33]">Отправь проект</p>
           <CopyBox
             text={
               "git init\n" +
               "git add .\n" +
-              'git commit -m "РИТМ: первая версия"\n' +
+              'git commit -m "PragmaBox: первая версия"\n' +
               "git branch -M main\n" +
               "git remote add origin https://github.com/логин/ritm-trainer.git\n" +
               "git push -u origin main"
@@ -128,7 +128,7 @@ export default function DeployGuide() {
             <Code>push</Code> отправляет.
           </p>
 
-          <p className="pt-1 font-semibold text-slate-900">Пароль не подойдёт — нужен токен</p>
+          <p className="pt-1 font-semibold text-[#0F1C33]">Пароль не подойдёт — нужен токен</p>
           <p>
             При <Code>push</Code> терминал спросит логин и пароль. Обычный пароль GitHub больше не
             принимает, вместо него нужен токен.
@@ -189,7 +189,7 @@ export default function DeployGuide() {
             Вторая: имя <Code>TELEGRAM_BOT_TOKEN</Code>, значение — токен от{" "}
             <Code>@BotFather</Code>.
           </p>
-          <p className="rounded-xl bg-amber-50 p-2.5 text-[13px] text-amber-900">
+          <p className="rounded-xl bg-amber-50 p-2.5 text-[13px] text-[#8A5A00]">
             Переменные можно добавить и позже: <Code>Settings</Code> →{" "}
             <Code>Environment Variables</Code>. Но тогда нужно будет заново запустить сборку —{" "}
             <Code>Deployments</Code> → <Code>Redeploy</Code>.
@@ -246,7 +246,7 @@ export default function DeployGuide() {
             Когда увидишь <Code>Changes applied</Code> или <Code>No changes detected</Code> —
             готово. Повторять только если мы поменяем структуру данных.
           </p>
-          <p className="rounded-xl bg-amber-50 p-2.5 text-[13px] text-amber-900">
+          <p className="rounded-xl bg-amber-50 p-2.5 text-[13px] text-[#8A5A00]">
             <b>Важно:</b> не загружай <Code>.env</Code> в GitHub. Для Vercel секреты добавляются
             отдельно в <Code>Settings → Environment Variables</Code>.
           </p>
@@ -267,8 +267,8 @@ export default function DeployGuide() {
       </ol>
 
       <section className="mt-5 rounded-3xl bg-white/85 p-4 text-sm shadow-sm">
-        <h2 className="font-bold text-slate-900">Как обновлять потом</h2>
-        <p className="mt-2 text-slate-700">
+        <h2 className="font-bold text-[#0F1C33]">Как обновлять потом</h2>
+        <p className="mt-2 text-[#5C6B86]">
           Поменял что-то в коде — те же три команды из папки проекта. Vercel пересоберёт сайт сам за
           пару минут.
         </p>
@@ -281,8 +281,8 @@ export default function DeployGuide() {
       </section>
 
       <section className="mt-3 rounded-3xl bg-white/85 p-4 text-sm shadow-sm">
-        <h2 className="font-bold text-slate-900">Что дальше</h2>
-        <ul className="mt-2 space-y-1.5 text-slate-700">
+        <h2 className="font-bold text-[#0F1C33]">Что дальше</h2>
+        <ul className="mt-2 space-y-1.5 text-[#5C6B86]">
           <li>
             <b>Свой домен.</b> <Code>Settings</Code> → <Code>Domains</Code>, если захочешь красивый
             адрес вместо vercel.app.
@@ -295,8 +295,8 @@ export default function DeployGuide() {
       </section>
 
       <section className="mt-3 rounded-3xl bg-white/85 p-4 text-sm shadow-sm">
-        <h2 className="font-bold text-slate-900">Если что-то сломалось</h2>
-        <ul className="mt-2 space-y-1.5 text-slate-700">
+        <h2 className="font-bold text-[#0F1C33]">Если что-то сломалось</h2>
+        <ul className="mt-2 space-y-1.5 text-[#5C6B86]">
           <li>
             <b>Ошибка про DATABASE_URL</b> — переменная не добавлена или добавлена после сборки.
             Добавь и сделай <Code>Redeploy</Code>.
@@ -316,8 +316,8 @@ export default function DeployGuide() {
       </section>
 
       <section className="mt-3 rounded-3xl bg-white/85 p-4 text-sm shadow-sm">
-        <h2 className="font-bold text-slate-900">Ошибки в терминале</h2>
-        <ul className="mt-2 space-y-2 text-slate-700">
+        <h2 className="font-bold text-[#0F1C33]">Ошибки в терминале</h2>
+        <ul className="mt-2 space-y-2 text-[#5C6B86]">
           <li>
             <b>Authentication failed</b> — вместо пароля нужен токен из шага 3.
           </li>

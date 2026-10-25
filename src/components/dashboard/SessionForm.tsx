@@ -20,12 +20,12 @@ interface SessionFormProps {
 const DURATIONS = [30, 45, 60, 75, 90, 120];
 
 const input =
-  "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-400";
+  "w-full rounded-xl border border-[#E0E5F1] bg-white px-3 py-2.5 text-sm text-[#0F1C33] outline-none focus:border-[#4A5BF0]";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="block space-y-1.5">
-      <span className="text-xs font-medium text-slate-500">{label}</span>
+      <span className="text-xs font-medium text-[#5C6B86]">{label}</span>
       {children}
     </div>
   );
@@ -168,7 +168,7 @@ export default function SessionForm({
                 type="button"
                 onClick={() => setMuscle(k)}
                 className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                  active ? "border-transparent text-white shadow-md" : "border-slate-200 bg-white text-slate-600"
+                  active ? "border-transparent text-white shadow-md" : "border-[#E0E5F1] bg-white text-[#5C6B86]"
                 }`}
                 style={active ? { backgroundColor: m.color } : undefined}
               >
@@ -183,8 +183,8 @@ export default function SessionForm({
         <Field label="Стоимость, ₽">
           <input type="number" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} className={input} />
         </Field>
-        <label className="flex items-center gap-2 pb-2.5 text-sm font-medium text-slate-700">
-          <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} className="h-4 w-4 accent-emerald-500" />
+        <label className="flex items-center gap-2 pb-2.5 text-sm font-medium text-[#5C6B86]">
+          <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} className="h-4 w-4 accent-[#4A5BF0]" />
           Оплачено
         </label>
       </div>
@@ -194,7 +194,7 @@ export default function SessionForm({
       </Field>
 
       {overlaps.length > 0 && (
-        <p className="rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">
+        <p className="rounded-2xl bg-[#FDECEF] p-3 text-sm text-[#B4232E]">
           ⚠️ Наложение с: {overlaps.map((o) => `${fmtTime(new Date(o.startsAt))} ${o.clientName}`).join(", ")}
         </p>
       )}
@@ -203,7 +203,7 @@ export default function SessionForm({
         type="button"
         onClick={submit}
         disabled={saving}
-        className="w-full rounded-2xl bg-gradient-to-br from-rose-500 to-red-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 disabled:opacity-60"
+        className="w-full rounded-2xl bg-gradient-to-br from-[#4A5BF0] to-[#3D4EDB] py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#F04452]/30 disabled:opacity-60"
       >
         {saving ? "Сохраняю…" : editing ? "Сохранить" : "Записать"}
       </button>

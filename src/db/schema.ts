@@ -17,6 +17,11 @@ export const trainers = pgTable("trainers", {
   name: text("name").notNull(),
   username: text("username"),
   photoUrl: text("photo_url"),
+  // Настраивается в первом запуске. Позже станет основой для Premium / Stars.
+  subscriptionTier: text("subscription_tier").notNull().default("free"),
+  monthlyGoal: integer("monthly_goal").notNull().default(30000),
+  avgSessionPrice: integer("avg_session_price").notNull().default(1500),
+  onboardingComplete: boolean("onboarding_complete").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
 });
 

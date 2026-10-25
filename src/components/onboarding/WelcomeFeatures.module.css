@@ -1,0 +1,114 @@
+.stage {
+  box-sizing: border-box;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  place-items: center;
+  padding: max(58px, calc(env(safe-area-inset-top) + 38px)) 20px 18px;
+  background: #fff;
+  transition: padding 0.3s ease;
+}
+
+/* Компактный первый шаг: меньше отступы, чтобы квадрат Lottie помещался
+   в уменьшенный по высоте фиолетовый блок сверху. */
+.stageCompact {
+  padding-top: max(48px, calc(env(safe-area-inset-top) + 22px));
+  padding-bottom: 10px;
+}
+.stageCompact .slot {
+  width: min(56vw, 212px, 26dvh);
+  border-radius: 26px;
+}
+.stageCompact .caption {
+  bottom: 7px;
+  font-size: 8px;
+}
+
+/* Один квадратный Lottie-ready слот. На первом экране больше нет карточек или
+   парящих декоративных блоков: только одна цельная иллюстрация. */
+.slot {
+  position: relative;
+  display: grid;
+  width: min(68vw, 280px, 34dvh);
+  aspect-ratio: 1;
+  max-width: 100%;
+  max-height: calc(100% - 8px);
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #e8eafd;
+  border-radius: 31px;
+  background:
+    radial-gradient(78% 72% at 82% 12%, rgba(155, 165, 255, .25), transparent 75%),
+    linear-gradient(145deg, #f8f8ff 0%, #f0f2ff 100%);
+  box-shadow: 0 15px 36px -27px rgba(74, 91, 240, .5), inset 0 1px 0 #fff;
+  transition: width 0.3s ease;
+}
+
+.aura {
+  position: absolute;
+  inset: 9%;
+  border-radius: 28%;
+  background: radial-gradient(circle at 50% 55%, rgba(116, 132, 255, .12), rgba(116, 132, 255, 0) 72%);
+}
+
+.art {
+  position: absolute;
+  inset: 3% 4% 8%;
+  width: 92%;
+  height: 89%;
+  overflow: visible;
+}
+
+.calendar {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: welcome-float 5.8s ease-in-out infinite;
+}
+
+.floatingBadge {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: badge-float 4.2s ease-in-out infinite;
+}
+
+.sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sparkle-pulse 3.6s ease-in-out infinite;
+}
+
+.caption {
+  position: absolute;
+  right: 0;
+  bottom: 9px;
+  left: 0;
+  color: #858eae;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .015em;
+  text-align: center;
+}
+
+@keyframes welcome-float {
+  0%, 100% { transform: translateY(1px) rotate(-.3deg); }
+  50% { transform: translateY(-3px) rotate(.3deg); }
+}
+@keyframes badge-float {
+  0%, 100% { transform: translateY(1px); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes sparkle-pulse {
+  0%, 100% { opacity: .55; transform: scale(.9); }
+  50% { opacity: .95; transform: scale(1.08); }
+}
+
+@media (max-height: 620px) {
+  .stage { padding-top: 49px; padding-bottom: 12px; }
+  .slot { width: min(62vw, 34dvh, 224px); border-radius: 26px; }
+  .caption { bottom: 7px; font-size: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar, .floatingBadge, .sparkle { animation: none !important; }
+}

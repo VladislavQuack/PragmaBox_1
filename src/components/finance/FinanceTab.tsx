@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { patch } from "@/lib/client-api";
 import { dailyEarnings, incomeSummary, startMs, sumPrice } from "@/lib/analytics";
 import { fmtMoney, fmtShortDate, startOfMonth } from "@/lib/time";
@@ -58,12 +58,16 @@ export default function FinanceTab({
   now,
   onReload,
   onToast,
+  focusClientId,
+  onOptimisticSessionUpdate,
 }: {
   history: SessionDTO[];
   clients: ClientDTO[];
   now: Date;
   onReload: () => void;
   onToast: (msg: string) => void;
+  focusClientId?: number | null;
+  onOptimisticSessionUpdate?: (id: number, updates: Partial<SessionDTO>) => void;
 }) {
   const [range, setRange] = useState<Range>("month");
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -85,26 +89,43 @@ export default function FinanceTab({
   const owedPackages = debtors.reduce((acc, d) => acc + d.packageSum, 0);
 
   const slices: Slice[] = [
-    { label: "Получено", value: received, color: "#10B981" },
-    { label: "Долг за тренировки", value: owedSessions, color: "#F43F5E" },
-    { label: "Неоплаченные абонементы", value: owedPackages, color: "#F59E0B" },
+    { label: "Получено", value: received, color: "#1DB871" },
+    { label: "Долг за тренировки", value: owedSessions, color: "#F04452" },
+    { label: "Неоплаченные абонементы", value: owedPackages, color: "#FF9F0A" },
   ];
   const totalMoney = received + owedSessions + owedPackages;
   const collectedPct = totalMoney > 0 ? Math.round((received / totalMoney) * 100) : 100;
   const maxBar = Math.max(1, ...series.map((x) => x.sum));
+
+  useEffect(() => {
+    if (!focusClientId) return;
+    const id = window.setTimeout(() => {
+      document.querySelector(`[data-debtor-id="${focusClientId}"]`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [focusClientId, debtors]);
 
   const payOff = async (d: Debtor) => {
     const unpaid = history.filter(
       (s) => s.clientId === d.clientId && s.status === "done" && !s.paid && s.price > 0,
     );
     if (unpaid.length === 0) return;
+
+    // Мгновенное обновление всех записей в памяти
+    if (onOptimisticSessionUpdate) {
+      unpaid.forEach((s) => onOptimisticSessionUpdate(s.id, { paid: true }));
+    }
+    onToast(`${d.name}: отмечено ${fmtMoney(d.sessionSum)}`);
+
     setBusyId(d.clientId);
     try {
       await Promise.all(unpaid.map((s) => patch(`/api/sessions/${s.id}`, { paid: true })));
-      onToast(`${d.name}: отмечено ${fmtMoney(d.sessionSum)}`);
-      onReload();
     } catch (e) {
-      onToast(e instanceof Error ? e.message : "Ошибка");
+      onToast(e instanceof Error ? e.message : "Ошибка сохранения оплаты");
+      onReload();
     } finally {
       setBusyId(null);
     }
@@ -113,41 +134,35 @@ export default function FinanceTab({
   return (
     <div className="space-y-3 pb-2">
       <div className="grid grid-cols-2 gap-2.5">
-        <div
-          className="tile p-3.5 text-white"
-          style={{ background: "var(--ios-green)", ["--tile-shadow" as string]: "rgba(52,199,89,0.4)" }}
-        >
-          <p className="text-[11px] font-semibold opacity-90">Заработано за месяц</p>
-          <p className="num mt-1 text-[22px] leading-none">{fmtMoney(sum.earned)}</p>
-          <p className="mt-1.5 text-[11px] opacity-90">получено {fmtMoney(sum.received)}</p>
+        <div className="tile bg-white p-4">
+          <p className="text-[12px] font-medium text-[#5C6B86]">Заработано за месяц</p>
+          <p className="num mt-1.5 text-[22px] leading-none text-[#0F1C33]">{fmtMoney(sum.earned)}</p>
+          <p className="mt-1.5 text-[11px] font-medium text-[#1DB871]">получено {fmtMoney(sum.received)}</p>
         </div>
-        <div
-          className={`tile p-3.5 ${sum.unpaid + owedPackages > 0 ? "text-white" : "text-black"}`}
-          style={
-            sum.unpaid + owedPackages > 0
-              ? { background: "var(--ios-red)", ["--tile-shadow" as string]: "rgba(255,59,48,0.4)" }
-              : { background: "#fff" }
-          }
-        >
-          <p className="text-[11px] font-semibold opacity-90">Должны сейчас</p>
-          <p className="num mt-1 text-[22px] leading-none">{fmtMoney(sum.unpaid + owedPackages)}</p>
-          <p className="mt-1.5 text-[11px] opacity-90">
+        <div className="tile bg-white p-4">
+          <p className="text-[12px] font-medium text-[#5C6B86]">Должны сейчас</p>
+          <p
+            className={`num mt-1.5 text-[22px] leading-none ${sum.unpaid + owedPackages > 0 ? "text-[#F04452]" : "text-[#0F1C33]"}`}
+          >
+            {fmtMoney(sum.unpaid + owedPackages)}
+          </p>
+          <p className="mt-1.5 text-[11px] font-medium text-[#9AA6BE]">
             {debtors.length === 0 ? "все рассчитались" : `${debtors.length} чел.`}
           </p>
         </div>
       </div>
 
-      <section className="rounded-[22px] bg-white p-4 shadow-sm">
+      <section className="rounded-[22px] border border-[#E6EAF3] bg-white p-4">
         <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-sm font-bold text-slate-900">Структура денег</h2>
-          <div className="flex rounded-full bg-slate-100 p-0.5">
+          <h2 className="text-[15px] font-bold text-[#0F1C33]">Структура денег</h2>
+          <div className="flex rounded-full bg-[#F1F3F9] p-0.5">
             {(["month", "all"] as Range[]).map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => setRange(r)}
                 className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
-                  range === r ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                  range === r ? "bg-white text-[#0F1C33] shadow-sm" : "text-[#9AA6BE]"
                 }`}
               >
                 {r === "month" ? "Месяц" : "Всё время"}
@@ -156,63 +171,63 @@ export default function FinanceTab({
           </div>
         </div>
         {totalMoney === 0 ? (
-          <p className="py-6 text-center text-sm text-slate-500">Пока нет проведённых тренировок</p>
+          <p className="py-6 text-center text-sm text-[#9AA6BE]">Пока нет проведённых тренировок</p>
         ) : (
-          <DonutChart
-            slices={slices}
-            centerTop={`${collectedPct}%`}
-            centerBottom="собрано"
-          />
+          <DonutChart slices={slices} centerTop={`${collectedPct}%`} centerBottom="собрано" />
         )}
       </section>
 
-      <section className="rounded-[22px] bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-sm font-bold text-slate-900">Доход за 14 дней</h2>
+      <section className="rounded-[22px] border border-[#E6EAF3] bg-white p-4">
+        <h2 className="mb-3 text-[15px] font-bold text-[#0F1C33]">Доход за 14 дней</h2>
         <div className="flex h-28 items-end gap-1">
           {series.map((x) => (
             <div key={x.label} className="flex h-full flex-1 flex-col justify-end" title={`${x.label}: ${fmtMoney(x.sum)}`}>
               <div
-                className="w-full rounded-t-md bg-gradient-to-t from-emerald-500 to-emerald-300"
-                style={{ height: `${Math.max(3, (x.sum / maxBar) * 100)}%` }}
+                className="bar-grad w-full rounded-t-[5px]"
+                style={{ height: `${Math.max(3, (x.sum / maxBar) * 100)}%`, opacity: x.sum > 0 ? 1 : 0.12 }}
               />
             </div>
           ))}
         </div>
         <div className="mt-1.5 flex gap-1">
           {series.map((x, i) => (
-            <span key={x.label} className="flex-1 text-center text-[8px] text-slate-400">
+            <span key={x.label} className="flex-1 text-center text-[8px] text-[#9AA6BE]">
               {i % 2 === 0 ? x.label : ""}
             </span>
           ))}
         </div>
       </section>
 
-      <section className="rounded-[22px] bg-white p-4 shadow-sm">
-        <h2 className="mb-1 text-sm font-bold text-slate-900">Кто должен</h2>
+      <section className="rounded-[22px] border border-[#E6EAF3] bg-white p-4">
+        <h2 className="mb-1 text-[15px] font-bold text-[#0F1C33]">Кто должен</h2>
         {debtors.length === 0 ? (
-          <p className="py-6 text-center text-sm text-slate-500">Долгов нет 👌</p>
+          <p className="py-6 text-center text-sm text-[#9AA6BE]">Долгов нет</p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-[#EFF1F6]">
             {debtors.map((d) => (
-              <li key={d.clientId} className="flex items-center gap-3 py-2.5">
+              <li
+                key={d.clientId}
+                data-debtor-id={d.clientId}
+                className={`flex items-center gap-3 rounded-xl px-2 py-2.5 transition ${
+                  focusClientId === d.clientId ? "bg-[#FDECEF] ring-1 ring-[#F04452]/25" : ""
+                }`}
+              >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-900">{d.name}</p>
-                  <p className="truncate text-[11px] text-slate-500">
+                  <p className="truncate text-sm font-semibold text-[#0F1C33]">{d.name}</p>
+                  <p className="truncate text-[11px] text-[#9AA6BE]">
                     {d.sessions > 0 && `${d.sessions} трен. · ${fmtMoney(d.sessionSum)}`}
                     {d.sessions > 0 && d.packageSum > 0 && " · "}
                     {d.packageSum > 0 && `абонемент ${fmtMoney(d.packageSum)}`}
                     {d.oldest && ` · с ${fmtShortDate(new Date(d.oldest))}`}
                   </p>
                 </div>
-                <span className="shrink-0 text-sm font-bold tabular-nums text-rose-600">
-                  {fmtMoney(d.total)}
-                </span>
+                <span className="shrink-0 text-sm font-bold tabular-nums text-[#F04452]">{fmtMoney(d.total)}</span>
                 {d.sessionSum > 0 && (
                   <button
                     type="button"
                     disabled={busyId === d.clientId}
                     onClick={() => payOff(d)}
-                    className="shrink-0 rounded-full bg-emerald-500 px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
+                    className="shrink-0 rounded-full bg-[#1DB871] px-2.5 py-1.5 text-[11px] font-bold text-white disabled:opacity-50"
                   >
                     Оплачено
                   </button>
@@ -223,15 +238,15 @@ export default function FinanceTab({
         )}
       </section>
 
-      <section className="rounded-[22px] bg-white p-4 shadow-sm">
-        <h2 className="mb-2 text-sm font-bold text-slate-900">Ожидается</h2>
+      <section className="rounded-[22px] border border-[#E6EAF3] bg-white p-4">
+        <h2 className="mb-2 text-[15px] font-bold text-[#0F1C33]">Ожидается</h2>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-600">Запланировано до конца месяца</span>
-          <span className="font-bold tabular-nums text-slate-900">{fmtMoney(sum.planned)}</span>
+          <span className="text-[#5C6B86]">Запланировано до конца месяца</span>
+          <span className="font-bold tabular-nums text-[#0F1C33]">{fmtMoney(sum.planned)}</span>
         </div>
         <div className="mt-2 flex items-center justify-between text-sm">
-          <span className="text-slate-600">Всего проведено тренировок</span>
-          <span className="font-bold tabular-nums text-slate-900">
+          <span className="text-[#5C6B86]">Всего проведено тренировок</span>
+          <span className="font-bold tabular-nums text-[#0F1C33]">
             {history.filter((s) => s.status === "done").length}
           </span>
         </div>

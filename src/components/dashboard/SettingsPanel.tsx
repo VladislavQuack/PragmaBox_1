@@ -52,6 +52,9 @@ interface SettingsPanelProps {
   onChange: (p: WidgetPrefs) => void;
   onSeed: () => void;
   onStartTutorial?: () => void;
+  clientCount: number;
+  subscriptionTier: string;
+  onOpenPremium?: () => void;
   // Инструкции по боту и деплою видны только владельцу приложения
   showGuides?: boolean;
 }
@@ -67,15 +70,45 @@ export default function SettingsPanel({
   onChange,
   onSeed,
   onStartTutorial,
+  clientCount,
+  subscriptionTier,
+  onOpenPremium,
   showGuides = false,
 }: SettingsPanelProps) {
+  const premium = subscriptionTier === "premium";
+
   return (
     <div className="space-y-4 pb-4">
+      {onOpenPremium && (
+        <button
+          type="button"
+          onClick={onOpenPremium}
+          className="relative w-full overflow-hidden rounded-[22px] p-4 text-left text-white shadow-lg shadow-[#4A5BF0]/25 transition active:scale-[0.98]"
+          style={{ background: "linear-gradient(135deg, #6C82FF 0%, #4A5BF0 55%, #3D4EDB 100%)" }}
+        >
+          <span className="hero-pattern pointer-events-none absolute inset-0 opacity-50" />
+          <span className="relative flex items-start justify-between gap-4">
+            <span>
+              <span className="inline-flex rounded-full bg-white/18 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]">
+                PragmaBox {premium ? "Premium" : "Free"}
+              </span>
+              <span className="mt-2 block text-[17px] font-bold">
+                {premium ? "Все возможности доступны" : "Уберите лимит на клиентов"}
+              </span>
+              <span className="mt-1 block text-[12px] leading-relaxed text-white/78">
+                {premium ? "Спасибо, что выбираете PragmaBox." : `${clientCount} из 3 клиентов на Free-плане · Premium от 299 ₽/мес`}
+              </span>
+            </span>
+            <span className="mt-2 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/18 text-lg font-bold">→</span>
+          </span>
+        </button>
+      )}
+
       {onStartTutorial && (
         <button
           type="button"
           onClick={onStartTutorial}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition active:scale-[0.98]"
+          className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#4A5BF0]/25 transition active:scale-[0.98]"
           style={{
             background: "linear-gradient(135deg, #007aff 0%, #005bb5 100%)",
           }}
@@ -88,44 +121,44 @@ export default function SettingsPanel({
       )}
 
       <section className="space-y-2">
-        <p className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Виджеты на дашборде</p>
+        <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Виджеты на дашборде</p>
         {WIDGETS.map((w) => (
           <label key={w.key} className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm">
             <span>
-              <span className="block text-sm font-semibold text-slate-900">{w.title}</span>
-              <span className="block text-xs text-slate-500">{w.hint}</span>
+              <span className="block text-sm font-semibold text-[#0F1C33]">{w.title}</span>
+              <span className="block text-xs text-[#5C6B86]">{w.hint}</span>
             </span>
             <input
               type="checkbox"
               checked={prefs[w.key]}
               onChange={(e) => onChange({ ...prefs, [w.key]: e.target.checked })}
-              className="h-5 w-5 accent-emerald-500"
+              className="h-5 w-5 accent-[#4A5BF0]"
             />
           </label>
         ))}
-        <p className="px-1 text-xs text-slate-500">Таймлайн всегда на главном экране: это ядро продукта.</p>
+        <p className="px-1 text-xs text-[#5C6B86]">Таймлайн всегда на главном экране: это ядро продукта.</p>
       </section>
 
       {showGuides && (
         <section className="space-y-2">
-          <p className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">
             Для владельца
           </p>
           <a
             href="/setup"
-            className="block w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-slate-900 shadow-sm"
+            className="block w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-[#0F1C33] shadow-sm"
           >
             Запуск в Telegram
-            <span className="mt-0.5 block text-xs font-normal text-slate-500">
+            <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">
               Создать бота и подключить мини-апп
             </span>
           </a>
           <a
             href="/deploy"
-            className="block w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-slate-900 shadow-sm"
+            className="block w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-[#0F1C33] shadow-sm"
           >
             Публикация на Vercel
-            <span className="mt-0.5 block text-xs font-normal text-slate-500">
+            <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">
               Постоянный адрес и своя база данных
             </span>
           </a>
@@ -133,10 +166,10 @@ export default function SettingsPanel({
       )}
 
       <section className="space-y-2">
-        <p className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Демо</p>
-        <button type="button" onClick={onSeed} className="w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-slate-900 shadow-sm">
+        <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Демо</p>
+        <button type="button" onClick={onSeed} className="w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-[#0F1C33] shadow-sm">
           Загрузить демо-данные
-          <span className="mt-0.5 block text-xs font-normal text-slate-500">Работает только если база пустая</span>
+          <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">Работает только если база пустая</span>
         </button>
       </section>
     </div>

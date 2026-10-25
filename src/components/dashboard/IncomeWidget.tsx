@@ -1,6 +1,7 @@
 "use client";
 
-import { fmtNum } from "@/lib/time";
+import { fmtMoney, fmtNum } from "@/lib/time";
+import { IconArrowRight, IconWallet } from "@/components/ui/icons";
 
 interface IncomeWidgetProps {
   earned: number;
@@ -9,40 +10,32 @@ interface IncomeWidgetProps {
   onOpen: () => void;
 }
 
-// Зелёная плитка с кольцом прогресса: сколько из плана уже заработано
 export default function IncomeWidget({ earned, plan, label, onOpen }: IncomeWidgetProps) {
   const pct = plan > 0 ? Math.min(100, Math.round((earned / plan) * 100)) : 0;
-  const r = 43;
-  const c = 2 * Math.PI * r;
-
   return (
     <button
       type="button"
       onClick={onOpen}
       aria-label={`Доход ${label}: ${earned} из ${plan} рублей`}
-      className="tile tile-income-gradient relative flex min-h-[clamp(132px,19dvh,168px)] items-center justify-center overflow-hidden p-3 text-white"
-      style={{ ["--tile-shadow" as string]: "rgba(5,150,105,0.45)" }}
+      className="tile card-tint-green flex min-h-[118px] flex-col justify-between p-3.5 text-left"
     >
-      <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full p-1.5" aria-hidden="true">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="8" />
-        <circle
-          cx="50"
-          cy="50"
-          r={r}
-          fill="none"
-          stroke="#fff"
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={`${(pct / 100) * c} ${c}`}
-          transform="rotate(-90 50 50)"
-          style={{ transition: "stroke-dasharray 0.5s ease" }}
-        />
-      </svg>
-
-      <span className="relative flex flex-col items-center leading-none">
-        <span className="text-[11px] font-semibold opacity-90">Заработано</span>
-        <span className="num mt-1 text-[30px] leading-none">{fmtNum(earned)}₽</span>
-        <span className="mt-1.5 text-[11px] font-medium opacity-85">из {fmtNum(plan)}₽</span>
+      <span className="flex items-center justify-between">
+        <span className="chip-green grid h-9 w-9 place-items-center rounded-[13px]">
+          <IconWallet className="h-5 w-5" />
+        </span>
+        <IconArrowRight className="h-4 w-4 text-[#B5C2D6]" />
+      </span>
+      <span className="mt-2 block">
+        <span className="block text-[12px] font-medium text-[#5C6B86]">Доход · {label}</span>
+        <span className="num mt-1 block text-[26px] leading-none text-[#0F1C33]">{fmtNum(earned)}&nbsp;₽</span>
+      </span>
+      <span data-tile-foot className="mt-2 block">
+        <span className="block h-1.5 w-full overflow-hidden rounded-full bg-[#D4EFE1]">
+          <span className="block h-full rounded-full bg-[#1DB871] transition-[width]" style={{ width: `${pct}%` }} />
+        </span>
+        <span className="mt-1.5 block text-[11px] font-medium text-[#7D8AA6]">
+          из {fmtMoney(plan)} · {pct}%
+        </span>
       </span>
     </button>
   );

@@ -276,11 +276,15 @@ export default function TimelineCreator({
     >
       {/* Шапка */}
       <header className="flex shrink-0 items-center gap-2 px-4 pt-4">
+        {/* На первом шаге «Назад» скрыт: мастер не закрывается случайным тапом */}
         <button
           type="button"
           onClick={back}
           aria-label="Назад"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/80 text-slate-700 shadow-sm active:scale-90"
+          tabIndex={visibleIndex > 0 ? 0 : -1}
+          className={`grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/80 text-[#5C6B86] shadow-sm active:scale-90 ${
+            visibleIndex > 0 ? "" : "invisible pointer-events-none"
+          }`}
         >
           <IconChevronLeft />
         </button>
@@ -288,7 +292,7 @@ export default function TimelineCreator({
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ios-blue)]">
             Новая тренировка · {visibleIndex + 1}/{visibleSteps.length}
           </p>
-          <p key={current.id} className="step-title truncate text-[17px] font-bold text-slate-900">
+          <p key={current.id} className="step-title truncate text-[17px] font-bold text-[#0F1C33]">
             {current.title}
           </p>
         </div>
@@ -296,7 +300,7 @@ export default function TimelineCreator({
           type="button"
           onClick={() => close(onCancel)}
           aria-label="Закрыть"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/80 text-slate-700 shadow-sm active:scale-90"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/80 text-[#5C6B86] shadow-sm active:scale-90"
         >
           <IconClose className="h-4 w-4" />
         </button>
@@ -322,7 +326,7 @@ export default function TimelineCreator({
               key={c.id}
               type="button"
               onClick={() => go(idx(c.id), idx(c.id) < step ? "back" : "fwd")}
-              className="crumb shrink-0 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm active:scale-95"
+              className="crumb shrink-0 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-[#5C6B86] shadow-sm active:scale-95"
             >
               {c.text}
             </button>
@@ -407,7 +411,7 @@ export default function TimelineCreator({
                     }}
                   >
                     <span className="block text-base font-bold">{fmtDuration(d)}</span>
-                    <span className={`block text-[11px] ${clash ? "font-semibold text-rose-500" : "text-slate-500"}`}>
+                    <span className={`block text-[11px] ${clash ? "font-semibold text-[#F04452]" : "text-[#5C6B86]"}`}>
                       {clash ? "наложение" : minute !== null ? `до ${fmtMinute(minute + d)}` : " "}
                     </span>
                   </Chip>
@@ -436,7 +440,7 @@ export default function TimelineCreator({
                       <span className="h-6 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: m.color }} />
                       <span className="text-left">
                         <span className="block text-sm font-bold">{m.label}</span>
-                        {wasLast && <span className="block text-[10px] font-semibold text-slate-500">в прошлый раз</span>}
+                        {wasLast && <span className="block text-[10px] font-semibold text-[#5C6B86]">в прошлый раз</span>}
                       </span>
                     </span>
                   </Chip>
@@ -450,12 +454,12 @@ export default function TimelineCreator({
               {(Object.keys(KINDS) as KindKey[]).map((k, i) => (
                 <Chip key={k} i={i} selected={kind === k} onClick={() => pickKind(k)}>
                   <span className="flex items-center gap-3 text-left">
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-slate-100 text-xl">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#F1F3F9] text-xl">
                       {KIND_META[k].emoji}
                     </span>
                     <span>
                       <span className="block text-base font-bold">{KINDS[k]}</span>
-                      <span className="block text-xs text-slate-500">{KIND_META[k].hint}</span>
+                      <span className="block text-xs text-[#5C6B86]">{KIND_META[k].hint}</span>
                     </span>
                   </span>
                 </Chip>
@@ -525,10 +529,10 @@ function Chip({
 }) {
   const toneCls =
     tone === "bad"
-      ? "bg-rose-50 border-rose-200 text-rose-900"
+      ? "bg-[#FDECEF] border-[#F3C2C7] text-[#0F1C33]"
       : tone === "dim"
-        ? "bg-white/50 border-white/60 text-slate-400"
-        : "bg-white/90 border-white text-slate-900";
+        ? "bg-white/50 border-white/60 text-[#9AA6BE]"
+        : "bg-white/90 border-white text-[#0F1C33]";
   return (
     <button
       type="button"
@@ -591,14 +595,14 @@ function ClientStep({
     return (
       <div className="space-y-3">
         <div className="chip-pop rounded-3xl bg-white/90 p-4 shadow-sm">
-          <p className="mb-2 text-xs font-semibold text-slate-500">Имя нового клиента</p>
+          <p className="mb-2 text-xs font-semibold text-[#5C6B86]">Имя нового клиента</p>
           <input
             autoFocus
             value={newName}
             onChange={(e) => onNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && ok && onNext()}
             placeholder="Например, Анна"
-            className="w-full bg-transparent text-2xl font-bold text-slate-900 outline-none placeholder:text-slate-300"
+            className="w-full bg-transparent text-2xl font-bold text-[#0F1C33] outline-none placeholder:text-[#C4CCDD]"
           />
         </div>
         <button
@@ -610,7 +614,7 @@ function ClientStep({
           Дальше →
         </button>
         {clients.length > 0 && (
-          <button type="button" onClick={() => onNewMode(false)} className="w-full py-2 text-sm font-semibold text-slate-500">
+          <button type="button" onClick={() => onNewMode(false)} className="w-full py-2 text-sm font-semibold text-[#5C6B86]">
             ← Выбрать из списка
           </button>
         )}
@@ -632,7 +636,7 @@ function ClientStep({
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-sm font-bold">{c.name}</span>
-                <span className={`block truncate text-[11px] ${p && p.remainingSessions <= 1 ? "font-semibold text-amber-600" : "text-slate-500"}`}>
+                <span className={`block truncate text-[11px] ${p && p.remainingSessions <= 1 ? "font-semibold text-amber-600" : "text-[#5C6B86]"}`}>
                   {p ? `осталось ${p.remainingSessions} из ${p.totalSessions}` : "без абонемента"}
                 </span>
               </span>
@@ -683,20 +687,20 @@ function DateStep({
           const weekend = d.getDay() === 0 || d.getDay() === 6;
           return (
             <Chip key={key} i={i} selected={selected === key} onClick={() => onPick(key)}>
-              <span className={`block text-[10px] font-semibold uppercase ${weekend ? "text-rose-500" : "text-slate-500"}`}>
+              <span className={`block text-[10px] font-semibold uppercase ${weekend ? "text-[#F04452]" : "text-[#5C6B86]"}`}>
                 {label}
               </span>
               <span className="block text-xl font-bold leading-tight tabular-nums">{d.getDate()}</span>
               <span className="flex h-2 items-center justify-center gap-0.5">
                 {Array.from({ length: Math.min(count, 5) }, (_, j) => (
-                  <span key={j} className="h-1 w-1 rounded-full bg-rose-400" />
+                  <span key={j} className="h-1 w-1 rounded-full bg-[#F04452]" />
                 ))}
               </span>
             </Chip>
           );
         })}
       </ChipGrid>
-      <label className="chip-pop relative flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white/50 py-3 text-sm font-semibold text-slate-600">
+      <label className="chip-pop relative flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-[#D3D9E8] bg-white/50 py-3 text-sm font-semibold text-[#5C6B86]">
         📅 Другая дата
         <input
           type="date"
@@ -706,7 +710,7 @@ function DateStep({
           className="absolute inset-0 cursor-pointer opacity-0"
         />
       </label>
-      <p className="text-center text-[11px] text-slate-400">Точки = сколько тренировок уже стоит в этот день</p>
+      <p className="text-center text-[11px] text-[#9AA6BE]">Точки = сколько тренировок уже стоит в этот день</p>
     </div>
   );
 }
@@ -737,7 +741,7 @@ function TimeStep({
   onHour: (h: number | null) => void;
   onPick: (m: number) => void;
 }) {
-  if (loading) return <p className="py-10 text-center text-sm text-slate-500">Смотрю расписание…</p>;
+  if (loading) return <p className="py-10 text-center text-sm text-[#5C6B86]">Смотрю расписание…</p>;
 
   if (hour !== null) {
     return (
@@ -763,7 +767,7 @@ function TimeStep({
             );
           })}
         </ChipGrid>
-        <button type="button" onClick={() => onHour(null)} className="w-full py-2 text-sm font-semibold text-slate-500">
+        <button type="button" onClick={() => onHour(null)} className="w-full py-2 text-sm font-semibold text-[#5C6B86]">
           ← Другой час
         </button>
       </div>
@@ -775,7 +779,7 @@ function TimeStep({
     <div className="space-y-3">
       {gaps.length > 0 && (
         <div>
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Свободные окна</p>
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#5C6B86]">Свободные окна</p>
           <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
             {gaps.slice(0, 6).map((g, i) => {
               const m = minuteOfDay(g.start);
@@ -785,7 +789,7 @@ function TimeStep({
                   type="button"
                   onClick={() => onPick(m)}
                   style={{ animationDelay: `${i * 30}ms` }}
-                  className="chip-pop shrink-0 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 px-3.5 py-2 text-left text-white shadow-md shadow-emerald-500/25 active:scale-95"
+                  className="chip-pop shrink-0 rounded-2xl bg-gradient-to-br from-[#1DB871] to-[#1DB871] px-3.5 py-2 text-left text-white shadow-md shadow-[#1DB871]/25 active:scale-95"
                 >
                   <span className="block text-base font-bold tabular-nums">{fmtMinute(m)}</span>
                   <span className="block text-[10px] opacity-90">окно {fmtDuration(g.minutes)}</span>
@@ -808,7 +812,7 @@ function TimeStep({
               <span className="block text-base font-bold tabular-nums">{fmtMinute(h * 60)}</span>
               <span className="flex h-2 items-center justify-center gap-0.5">
                 {Array.from({ length: Math.min(busy, 3) }, (_, j) => (
-                  <span key={j} className="h-1 w-1 rounded-full bg-rose-400" />
+                  <span key={j} className="h-1 w-1 rounded-full bg-[#F04452]" />
                 ))}
               </span>
             </Chip>
@@ -840,15 +844,15 @@ function PayStep({
         <button
           type="button"
           onClick={() => onPrice(price - 100)}
-          className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-2xl font-bold text-slate-700 active:scale-90"
+          className="grid h-12 w-12 place-items-center rounded-2xl bg-[#F1F3F9] text-2xl font-bold text-[#5C6B86] active:scale-90"
         >
           −
         </button>
-        <p className="text-3xl font-bold tabular-nums text-slate-900">{price === 0 ? "Бесплатно" : fmtMoney(price)}</p>
+        <p className="text-3xl font-bold tabular-nums text-[#0F1C33]">{price === 0 ? "Бесплатно" : fmtMoney(price)}</p>
         <button
           type="button"
           onClick={() => onPrice(price + 100)}
-          className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-2xl font-bold text-slate-700 active:scale-90"
+          className="grid h-12 w-12 place-items-center rounded-2xl bg-[#F1F3F9] text-2xl font-bold text-[#5C6B86] active:scale-90"
         >
           +
         </button>
@@ -861,7 +865,7 @@ function PayStep({
             onClick={() => onPrice(v)}
             style={{ animationDelay: `${i * 25}ms` }}
             className={`chip-pop shrink-0 rounded-full px-3 py-1.5 text-xs font-bold shadow-sm active:scale-95 ${
-              price === v ? "bg-slate-900 text-white" : "bg-white/90 text-slate-700"
+              price === v ? "bg-[#4A5BF0] text-white" : "bg-white/90 text-[#5C6B86]"
             }`}
           >
             {v === 0 ? "0 ₽" : fmtMoney(v)}
@@ -883,7 +887,7 @@ function PayStep({
                   <span className="text-2xl">🎟</span>
                   <span>
                     <span className="block text-sm font-bold">По абонементу</span>
-                    <span className="block text-xs text-slate-500">осталось {pkg.remainingSessions} из {pkg.totalSessions}</span>
+                    <span className="block text-xs text-[#5C6B86]">осталось {pkg.remainingSessions} из {pkg.totalSessions}</span>
                   </span>
                 </span>
               </Chip>
@@ -954,29 +958,29 @@ function ReviewStep({
         <div className="flex items-center gap-3 p-4" style={{ background: `linear-gradient(135deg, ${m.color}22, transparent)` }}>
           <span className="h-12 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: m.color }} />
           <button type="button" onClick={() => onJump("client")} className="min-w-0 text-left">
-            <p className="truncate text-xl font-bold text-slate-900">{clientName}</p>
-            <p className="text-xs text-slate-500">
+            <p className="truncate text-xl font-bold text-[#0F1C33]">{clientName}</p>
+            <p className="text-xs text-[#5C6B86]">
               {isNew ? "новый клиент" : pkgLeft !== null ? `в абонементе осталось ${pkgLeft}` : "без абонемента"}
             </p>
           </button>
         </div>
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-[#EFF1F6]">
           {rows.map((r) => (
             <li key={r.id}>
               <button
                 type="button"
                 onClick={() => onJump(r.id)}
-                className="flex w-full items-center justify-between px-4 py-2.5 text-left active:bg-slate-50"
+                className="flex w-full items-center justify-between px-4 py-2.5 text-left active:bg-[#F1F3F9]"
               >
-                <span className="text-xs text-slate-500">{r.label}</span>
-                <span className="text-sm font-semibold text-slate-900">{r.value}</span>
+                <span className="text-xs text-[#5C6B86]">{r.label}</span>
+                <span className="text-sm font-semibold text-[#0F1C33]">{r.value}</span>
               </button>
             </li>
           ))}
         </ul>
       </div>
       {conflicts.length > 0 && (
-        <p className="chip-pop rounded-2xl bg-rose-50 p-3 text-xs font-medium text-rose-700">
+        <p className="chip-pop rounded-2xl bg-[#FDECEF] p-3 text-xs font-medium text-[#B4232E]">
           ⚠️ Наложение: {conflicts.map((c) => `${fmtMinute(minuteOfDay(new Date(c.startsAt)))} ${c.clientName}`).join(", ")}
         </p>
       )}

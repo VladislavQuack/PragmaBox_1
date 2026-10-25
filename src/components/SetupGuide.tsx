@@ -38,7 +38,7 @@ export default function SetupGuide({ hasToken }: { hasToken: boolean }) {
 
       <div
         className={`mb-4 rounded-2xl p-3 text-sm font-medium ${
-          hasToken ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"
+          hasToken ? "bg-[#E5F7EC] text-[#0E7A47]" : "bg-[#FFF3DF] text-[#8A5A00]"
         }`}
       >
         {hasToken
@@ -47,16 +47,16 @@ export default function SetupGuide({ hasToken }: { hasToken: boolean }) {
       </div>
 
       <section className="mb-4 rounded-3xl bg-white/85 p-4 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Адрес приложения</p>
-        <p className="mt-1 break-all font-mono text-[13px] text-slate-900">{origin || "…"}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Адрес приложения</p>
+        <p className="mt-1 break-all font-mono text-[13px] text-[#0F1C33]">{origin || "…"}</p>
         <button
           type="button"
           onClick={copy}
-          className="mt-3 w-full rounded-xl bg-slate-900 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
+          className="mt-3 w-full rounded-xl bg-[#4A5BF0] py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
         >
           {copied ? "Скопировано ✓" : "Скопировать адрес"}
         </button>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-[#5C6B86]">
           Этот адрес понадобится в шаге 4. Он живёт, пока работает песочница: для постоянного бота
           нужен свой хостинг (шаг 5).
         </p>
@@ -68,7 +68,7 @@ export default function SetupGuide({ hasToken }: { hasToken: boolean }) {
             Открой в Telegram <Code>@BotFather</Code> и отправь команду <Code>/newbot</Code>.
           </p>
           <p>
-            Он спросит название (любое, например «РИТМ Тренер») и username — он должен заканчиваться
+            Он спросит название (любое, например «PragmaBox Тренер») и username — он должен заканчиваться
             на <Code>bot</Code>, например <Code>ritm_trainer_bot</Code>.
           </p>
           <p>
@@ -125,7 +125,7 @@ export default function SetupGuide({ hasToken }: { hasToken: boolean }) {
           </p>
           <Link
             href="/deploy"
-            className="mt-1 inline-block rounded-xl bg-slate-900 px-4 py-2 text-[13px] font-semibold text-white"
+            className="mt-1 inline-block rounded-xl bg-[#4A5BF0] px-4 py-2 text-[13px] font-semibold text-white"
           >
             Открыть инструкцию по Vercel →
           </Link>
@@ -133,8 +133,8 @@ export default function SetupGuide({ hasToken }: { hasToken: boolean }) {
       </ol>
 
       <section className="mt-5 rounded-3xl bg-white/85 p-4 text-sm shadow-sm">
-        <h2 className="font-bold text-slate-900">Если что-то не работает</h2>
-        <ul className="mt-2 space-y-1.5 text-slate-700">
+        <h2 className="font-bold text-[#0F1C33]">Если что-то не работает</h2>
+        <ul className="mt-2 space-y-1.5 text-[#5C6B86]">
           <li>
             <b>«Открой приложение через Telegram»</b> — значит токен добавлен, а страницу открыли в
             браузере. Это правильно: заходи через бота или включи{" "}

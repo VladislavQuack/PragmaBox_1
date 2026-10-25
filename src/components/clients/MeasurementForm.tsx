@@ -91,13 +91,13 @@ export default function MeasurementForm({
     <div className="space-y-3">
       <div className="rounded-[20px] bg-white p-3.5 shadow-sm">
         <label className="block space-y-1">
-          <span className="text-xs font-medium text-slate-500">Дата замера</span>
+          <span className="text-xs font-medium text-[#5C6B86]">Дата замера</span>
           <input
             type="date"
             value={date}
             max={dayKey(today)}
             onChange={(e) => e.target.value && setDate(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-400"
+            className="w-full rounded-xl border border-[#E0E5F1] bg-white px-3 py-2.5 text-sm text-[#0F1C33] outline-none focus:border-[#4A5BF0]"
           />
         </label>
         {existing && (
@@ -115,14 +115,14 @@ export default function MeasurementForm({
           return (
             <div key={def.key} className="rounded-[20px] bg-white p-3 shadow-sm">
               <div className="mb-2 flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <span className="flex items-center gap-2 text-sm font-semibold text-[#0F1C33]">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: def.color }} />
                   {def.label}
                 </span>
                 <button
                   type="button"
                   onClick={() => removeMetric(def.key)}
-                  className="text-[11px] font-medium text-slate-400"
+                  className="text-[11px] font-medium text-[#9AA6BE]"
                 >
                   убрать
                 </button>
@@ -131,7 +131,7 @@ export default function MeasurementForm({
                 <button
                   type="button"
                   onClick={() => bump(def.key, -1)}
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-slate-100 text-xl font-bold text-slate-700 active:scale-90"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#F1F3F9] text-xl font-bold text-[#5C6B86] active:scale-90"
                 >
                   −
                 </button>
@@ -144,20 +144,20 @@ export default function MeasurementForm({
                     onChange={(e) =>
                       setValues((v) => ({ ...v, [def.key]: Number(e.target.value) || 0 }))
                     }
-                    className="w-20 border-0 bg-transparent p-0 text-center text-2xl font-bold tabular-nums text-slate-900 outline-none"
+                    className="w-20 border-0 bg-transparent p-0 text-center text-2xl font-bold tabular-nums text-[#0F1C33] outline-none"
                   />
-                  <span className="text-xs text-slate-500">{def.unit}</span>
+                  <span className="text-xs text-[#5C6B86]">{def.unit}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => bump(def.key, 1)}
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-slate-100 text-xl font-bold text-slate-700 active:scale-90"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#F1F3F9] text-xl font-bold text-[#5C6B86] active:scale-90"
                 >
                   +
                 </button>
               </div>
               {diff !== null && diff !== 0 && (
-                <p className="mt-1.5 text-center text-[11px] text-slate-500">
+                <p className="mt-1.5 text-center text-[11px] text-[#5C6B86]">
                   было {prev} {def.unit} · {diff > 0 ? "+" : "−"}
                   {Math.abs(diff)}
                 </p>
@@ -174,7 +174,7 @@ export default function MeasurementForm({
               key={def.key}
               type="button"
               onClick={() => addMetric(def.key)}
-              className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm active:scale-95"
+              className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#5C6B86] shadow-sm active:scale-95"
             >
               + {def.short}
             </button>
@@ -186,14 +186,14 @@ export default function MeasurementForm({
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="Заметка (необязательно)"
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-400"
+        className="w-full rounded-xl border border-[#E0E5F1] bg-white px-3 py-2.5 text-sm text-[#0F1C33] outline-none focus:border-[#4A5BF0]"
       />
 
       <div className="grid grid-cols-2 gap-2 pb-2">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-2xl bg-slate-100 py-3 text-sm font-semibold text-slate-600"
+          className="rounded-2xl bg-[#F1F3F9] py-3 text-sm font-semibold text-[#5C6B86]"
         >
           Отмена
         </button>

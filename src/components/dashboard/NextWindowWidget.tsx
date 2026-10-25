@@ -2,6 +2,7 @@
 
 import type { Gap } from "@/lib/analytics";
 import { fmtTime } from "@/lib/time";
+import { IconArrowRight, IconClock } from "@/components/ui/icons";
 
 interface NextWindowWidgetProps {
   isToday: boolean;
@@ -12,7 +13,6 @@ interface NextWindowWidgetProps {
 
 const DOTS = 6;
 
-// Синяя плитка: сколько осталось до окна. Точки показывают, насколько оно близко.
 export default function NextWindowWidget({ isToday, now, gap, onOpen }: NextWindowWidgetProps) {
   let title = "Ближайшее окно";
   let main = "—";
@@ -20,8 +20,7 @@ export default function NextWindowWidget({ isToday, now, gap, onOpen }: NextWind
   let filled = 0;
 
   if (isToday && !gap) {
-    title = "Ближайшее окно";
-    main = "нет";
+    main = "Нет окон";
     sub = "день плотный";
   } else if (isToday && gap) {
     const untilMin = Math.round((gap.start.getTime() - now.getTime()) / 60_000);
@@ -32,10 +31,9 @@ export default function NextWindowWidget({ isToday, now, gap, onOpen }: NextWind
       sub = `до ${fmtTime(gap.end)}`;
       filled = DOTS;
     } else {
-      title = "Ближайшее окно через";
+      title = "Окно через";
       main = `${Math.floor(untilMin / 60)}:${String(untilMin % 60).padStart(2, "0")}`;
-      sub = `на ${gap.minutes} мин`;
-      // Чем ближе окно, тем больше точек заполнено (шкала до 3 часов)
+      sub = `на ${gap.minutes} мин · до ${fmtTime(gap.end)}`;
       filled = Math.max(1, Math.min(DOTS, Math.round(((180 - Math.min(untilMin, 180)) / 180) * DOTS)));
     }
   }
@@ -44,31 +42,30 @@ export default function NextWindowWidget({ isToday, now, gap, onOpen }: NextWind
     <button
       type="button"
       onClick={onOpen}
-      className="tile tile-window-gradient flex min-h-[clamp(132px,19dvh,168px)] flex-col justify-between p-3.5 text-left text-white"
-      style={{ ["--tile-shadow" as string]: "rgba(2,132,199,0.45)" }}
+      className="tile card-tint-blue flex min-h-[118px] flex-col justify-between p-3.5 text-left"
     >
-      <span className="text-[12px] font-semibold leading-tight opacity-95">{title}</span>
-
-      <span className="num text-[38px] leading-none">{main}</span>
-
-      <span className="flex items-center gap-1.5">
-        <span className="flex flex-1 items-center gap-1">
+      <span className="flex items-center justify-between">
+        <span className="chip-blue grid h-9 w-9 place-items-center rounded-[13px]">
+          <IconClock className="h-5 w-5" />
+        </span>
+        <IconArrowRight className="h-4 w-4 text-[#B5C2D6]" />
+      </span>
+      <span className="mt-2 block">
+        <span className="block text-[12px] font-medium text-[#5C6B86]">{title}</span>
+        <span className="num mt-1 block text-[26px] leading-none text-[#0F1C33]">{main}</span>
+      </span>
+      <span data-tile-foot className="mt-2 block">
+        <span className="flex items-center gap-1">
           {Array.from({ length: DOTS }, (_, i) => (
             <span
               key={i}
-              className="h-2 w-2 rounded-full transition-colors"
-              style={{ background: i < filled ? "#fff" : "rgba(255,255,255,0.4)" }}
+              className="h-1.5 flex-1 rounded-full"
+              style={{ background: i < filled ? "#4A5BF0" : "#D9DFF5" }}
             />
           ))}
         </span>
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/25">
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m9 6 6 6-6 6" />
-          </svg>
-        </span>
+        <span className="mt-1.5 block truncate text-[11px] font-medium text-[#7D8AA6]">{sub}</span>
       </span>
-
-      <span className="sr-only">{sub}</span>
     </button>
   );
 }
