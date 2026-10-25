@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { del, patch, post } from "@/lib/client-api";
 import { startMs } from "@/lib/analytics";
 import {
@@ -19,6 +19,7 @@ import { addDays, dayKey, fmtMoney, fmtShortDate, parseDayKey } from "@/lib/time
 import type { ClientDTO, MeasurementDTO, SessionDTO } from "@/lib/types";
 import { LineChart } from "@/components/charts/Charts";
 import { IconPlus, IconRuler } from "@/components/ui/icons";
+import { haptic } from "@/components/dashboard/TimelineCreator";
 import MeasurementForm from "./MeasurementForm";
 import { avatarColor, initials } from "./ClientsTab";
 
@@ -29,21 +30,34 @@ export default function ClientDetail({
   history,
   measurements,
   now,
+  isLastClient = false,
   onReload,
   onToast,
+  onDeleted,
 }: {
   client: ClientDTO;
   history: SessionDTO[];
   measurements: MeasurementDTO[];
   now: Date;
+  // Последний клиент в базе: после удаления приложение откроет онбординг
+  isLastClient?: boolean;
   onReload: () => void;
   onToast: (msg: string) => void;
+  onDeleted: (clientId: number, remainingClients: number) => void;
 }) {
   const [view, setView] = useState<View>("stats");
   const [metric, setMetric] = useState<MetricKey>("weight");
   const [period, setPeriod] = useState<Period>("weeks");
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const confirmRef = useRef<HTMLElement>(null);
+
+  // Подтверждение появляется внизу карточки — докручиваем, чтобы кнопки были видны
+  useEffect(() => {
+    if (confirmDelete) confirmRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [confirmDelete]);
 
   const mine = useMemo(
     () => measurements.filter((m) => m.clientId === client.id),
@@ -123,6 +137,26 @@ export default function ClientDetail({
       onToast(e instanceof Error ? e.message : "Ошибка");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const askDelete = () => {
+    haptic("warn");
+    setConfirmDelete(true);
+  };
+
+  const removeClient = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      const res = await del<{ ok: boolean; remainingClients: number }>(`/api/clients/${client.id}`);
+      haptic("success");
+      onToast("Клиент удалён");
+      onDeleted(client.id, res.remainingClients);
+    } catch (e) {
+      haptic("warn");
+      onToast(e instanceof Error ? e.message : "Не удалось удалить клиента");
+      setDeleting(false);
     }
   };
 
@@ -407,6 +441,53 @@ export default function ClientDetail({
         <IconPlus className="h-4 w-4" />
         Добавить замер
       </button>
+
+      {/* Удаление необратимо, поэтому сначала явное подтверждение прямо в карточке */}
+      {confirmDelete ? (
+        <section
+          ref={confirmRef}
+          role="alertdialog"
+          aria-label={`Удалить клиента ${client.name}`}
+          className="animate-fade-in scroll-mb-[max(env(safe-area-inset-bottom),24px)] rounded-[22px] border border-[#F3C2C7] bg-[#FDECEF] p-4"
+        >
+          <p className="text-[15px] font-bold text-[#B4232E]">Удалить клиента «{client.name}»?</p>
+          <p className="mt-1.5 text-[12px] leading-relaxed text-[#8F2A33]">
+            Вместе с ним удалятся все его тренировки, абонементы и замеры — они пропадут из
+            расписания и статистики доходов. Отменить это нельзя.
+          </p>
+          {isLastClient && (
+            <p className="mt-2 rounded-xl bg-white/70 p-2.5 text-[12px] leading-relaxed text-[#5C6B86]">
+              Это последний клиент: после удаления приложение заново откроет первичную настройку.
+            </p>
+          )}
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              disabled={deleting}
+              className="rounded-xl bg-white py-2.5 text-sm font-semibold text-[#5C6B86] transition active:scale-[0.98] disabled:opacity-60"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              onClick={removeClient}
+              disabled={deleting}
+              className="rounded-xl bg-[#F04452] py-2.5 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
+            >
+              {deleting ? "Удаляю…" : "Удалить"}
+            </button>
+          </div>
+        </section>
+      ) : (
+        <button
+          type="button"
+          onClick={askDelete}
+          className="w-full rounded-2xl bg-white py-3.5 text-sm font-semibold text-[#F04452] shadow-sm transition active:scale-[0.98]"
+        >
+          Удалить клиента
+        </button>
+      )}
     </div>
   );
 }

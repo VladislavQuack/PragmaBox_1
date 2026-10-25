@@ -137,6 +137,19 @@ export function useAppData() {
     );
   }, []);
 
+  // Клиент удалён на сервере: сразу убираем его и все его данные из памяти.
+  // remainingClients — ответ сервера; при 0 сервер сбросил флаг онбординга,
+  // повторяем это локально, чтобы онбординг открылся без ожидания перезагрузки.
+  const optimisticDeleteClient = useCallback((clientId: number, remainingClients?: number) => {
+    setClients((prev) => prev.filter((c) => c.id !== clientId));
+    setDaySessions((prev) => prev.filter((s) => s.clientId !== clientId));
+    setHistory((prev) => prev.filter((s) => s.clientId !== clientId));
+    setMeasurements((prev) => prev.filter((m) => m.clientId !== clientId));
+    if (remainingClients === 0) {
+      setMe((prev) => (prev ? { ...prev, onboardingComplete: false } : prev));
+    }
+  }, []);
+
   return {
     now,
     todayKey,
@@ -155,6 +168,7 @@ export function useAppData() {
     optimisticUpdateSession,
     optimisticDeleteSession,
     optimisticUpdatePackage,
+    optimisticDeleteClient,
   };
 }
 
