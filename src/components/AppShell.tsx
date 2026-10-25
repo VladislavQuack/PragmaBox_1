@@ -19,7 +19,8 @@ import PremiumOffer from "@/components/subscription/PremiumOffer";
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
-// Production: онбординг видят только новые реальные тренеры без клиентской базы.
+// true — показать онбординг в режиме предпросмотра (ничего не сохраняет) при каждом запуске.
+// Обычно не нужен: настоящий онбординг открывается сам, когда в базе нет клиентов.
 const FORCE_ONBOARDING_PREVIEW = false;
 
 const startOfWeek = (d: Date) => addDays(d, -((d.getDay() + 6) % 7));
@@ -246,9 +247,11 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
     return <div className="grid min-h-dvh place-items-center bg-[#F1F3F9] text-sm text-[#9AA6BE]">Загрузка…</div>;
   }
 
-  // Настоящий онбординг — только для нового тренера без клиентов.
-  // Временный preview включён выше и безопасен: он ничего не сохраняет в базу.
-  const needsRealOnboarding = !data.me.isDemo && !data.me.onboardingComplete && data.clients.length === 0;
+  // Онбординг открывается, когда в базе нет ни одного клиента — и у нового тренера,
+  // и после удаления последнего клиента (сервер при этом сбрасывает onboardingComplete).
+  // Флаг нужен, чтобы не зациклиться: если пройти онбординг, не добавив клиентов,
+  // он ставится, и дальше тренер попадает на пустой дашборд.
+  const needsRealOnboarding = !data.me.onboardingComplete && data.clients.length === 0;
   if (needsRealOnboarding || onboardingPreviewOpen) {
     return (
       <>
@@ -258,6 +261,9 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
           onPremium={() => setPremiumOpen(true)}
           onDone={() => {
             setOnboardingPreviewOpen(false);
+            // После настройки — на главный экран, а не туда, где удалили последнего клиента
+            setTab("day");
+            setOpenClientId(null);
             if (needsRealOnboarding) data.reload();
           }}
         />
@@ -427,12 +433,19 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
       <Sheet open={openClient !== null} onClose={() => setOpenClientId(null)} title={openClient?.name ?? ""} full>
         {openClient && (
           <ClientDetail
+            key={openClient.id}
             client={openClient}
             history={data.history}
             measurements={data.measurements}
             now={now}
+            isLastClient={data.clients.length === 1}
             onReload={data.reload}
             onToast={showToast}
+            onDeleted={(id, remainingClients) => {
+              setOpenClientId(null);
+              data.optimisticDeleteClient(id, remainingClients);
+              data.reload();
+            }}
           />
         )}
       </Sheet>
