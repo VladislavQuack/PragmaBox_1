@@ -20,7 +20,8 @@ interface SheetProps {
 // который попадает уже в только что появившуюся подложку и тут же закрывает шторку.
 const GHOST_CLICK_MS = 350;
 
-// Шторка снизу. full = на весь экран. bare = без стандартной шапки (свой хедер внутри).
+// Шторка снизу. full = на весь экран. bare = без стандартной шапки (свой хедер внутри):
+// такая шторка занимает весь экран, и её шапка сама отступает от кнопок Telegram (--safe-top).
 export default function Sheet({ open, onClose, title, children, full = false, bare = false }: SheetProps) {
   const openedAt = useRef(0);
   const closeRef = useRef(onClose);
@@ -92,8 +93,10 @@ export default function Sheet({ open, onClose, title, children, full = false, ba
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`relative flex w-full max-w-md flex-col overflow-hidden bg-[#F1F3F9] shadow-2xl animate-sheet-up ${
-          full ? "h-dvh rounded-none" : "max-h-[88dvh] rounded-t-[28px]"
+        // sheet-full и sheet-surface — в globals.css: в полноэкранном режиме Telegram
+        // шторка не заходит под его кнопки «Закрыть» и «⋯»
+        className={`sheet-surface relative flex w-full max-w-md flex-col overflow-hidden bg-[#F1F3F9] shadow-2xl animate-sheet-up ${
+          full ? "sheet-full rounded-none" : "max-h-[min(88dvh,calc(100dvh-var(--app-safe-top)-8px))] rounded-t-[28px]"
         }`}
       >
         {!full && <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-[#D3D9E8]" />}
@@ -108,7 +111,7 @@ export default function Sheet({ open, onClose, title, children, full = false, ba
             <IconClose />
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(env(safe-area-inset-bottom),24px)]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(var(--safe-bottom),24px)]">
           {children}
         </div>
       </section>

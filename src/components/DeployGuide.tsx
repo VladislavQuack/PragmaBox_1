@@ -34,7 +34,7 @@ function CopyBox({ text, hint }: { text: string; hint?: string }) {
 
 export default function DeployGuide() {
   return (
-    <main className="mx-auto w-full max-w-md px-4 pb-16 pt-[max(env(safe-area-inset-top),16px)]">
+    <main className="mx-auto w-full max-w-md px-4 pb-16 pt-[max(var(--safe-top),16px)]">
       <header className="mb-4">
         <Link href="/setup" className="on-bg-dim text-sm font-semibold">
           ← К настройке Telegram

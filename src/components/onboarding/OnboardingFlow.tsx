@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import { post } from "@/lib/client-api";
 import { FREE_CLIENT_LIMIT } from "@/lib/subscription";
 import { fmtMoney } from "@/lib/time";
-import { IconCheck, IconChevronLeft, IconPlus } from "@/components/ui/icons";
+import { IconCheck, IconChevronLeft, IconChevronRight, IconPlus } from "@/components/ui/icons";
 import { haptic } from "@/components/dashboard/TimelineCreator";
+import { TG_HEADER_COLOR, useTelegramHeaderColor } from "@/lib/telegram-shell";
 import WelcomeFeatures from "./WelcomeFeatures";
 import OnboardingFinishing from "./OnboardingFinishing";
 
@@ -29,15 +30,6 @@ const TILE_BG = {
   backgroundBlendMode: "overlay, normal",
 } as const;
 
-function ArrowUpRight() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M7 17 17 7" />
-      <path d="M9 7h8v8" />
-    </svg>
-  );
-}
-
 export default function OnboardingFlow({
   trainerName,
   onDone,
@@ -56,6 +48,10 @@ export default function OnboardingFlow({
   const [saving, setSaving] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Верх онбординга белый: шапка Telegram в тон, чтобы в полноэкранном режиме
+  // значки строки состояния стали тёмными. Финальный экран — фиолетовый.
+  useTelegramHeaderColor(finishing ? TG_HEADER_COLOR : "#FFFFFF");
 
   const validNames = useMemo(
     () => [...new Set(names.map((n) => n.trim()).filter(Boolean))],
@@ -103,20 +99,22 @@ export default function OnboardingFlow({
 
   // Высота фиолетового блока меняется по шагам и анимируется плавно:
   // шаг 1 — заметно меньше половины экрана, шаг 2 — около половины.
+  // Доля считается от экрана без строки состояния и кнопок Telegram (--safe-top),
+  // иначе в полноэкранном режиме блок вырастает и закрывает картинку сверху.
   const sheetHeight =
     step === 0
-      ? "h-[min(340px,42dvh)]"
+      ? "h-[min(340px,calc((100dvh-var(--safe-top))*0.42))]"
       : step === 1
-        ? "h-[min(430px,50dvh)]"
+        ? "h-[min(430px,calc((100dvh-var(--safe-top))*0.5))]"
         : step === 2
-          ? "h-[min(520px,64dvh)]"
-          : "h-[min(560px,72dvh)]";
+          ? "h-[min(520px,calc((100dvh-var(--safe-top))*0.64))]"
+          : "h-[min(560px,calc((100dvh-var(--safe-top))*0.72))]";
 
   return (
     <div className="fixed inset-0 z-[90] flex flex-col overflow-hidden bg-white">
       {/* ── Верх: белая сцена (своя на каждый шаг) ── */}
       <div className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <span className="absolute left-5 top-6 z-10 text-[11px] font-bold uppercase tracking-[0.14em] text-[#9AA6BE]">
+        <span className="absolute left-5 top-[calc(var(--safe-top)+24px)] z-10 text-[11px] font-bold uppercase tracking-[0.14em] text-[#9AA6BE]">
           PragmaBox · {preview ? "предпросмотр" : "первый запуск"}
         </span>
         {step === 0 && <WelcomeFeatures compact />}
@@ -130,7 +128,7 @@ export default function OnboardingFlow({
       {/* ── Низ: фиолетовый лист как в макете ── */}
       {/* Высота блока анимируется при смене шага; контент внутри листается отдельно */}
       <section
-        className={`relative z-10 mx-3 mb-3 flex ${sheetHeight} shrink-0 flex-col overflow-hidden rounded-[34px] px-5 pb-[max(env(safe-area-inset-bottom),16px)] pt-4 text-white transition-[height] duration-300 ease-out`}
+        className={`relative z-10 mx-3 mb-3 flex ${sheetHeight} shrink-0 flex-col overflow-hidden rounded-[34px] px-5 pb-[max(var(--safe-bottom),16px)] pt-4 text-white transition-[height] duration-300 ease-out`}
         style={{ ...SHEET_BG, boxShadow: "0 18px 40px -24px rgba(74,91,240,0.9)" }}
       >
         <div className="flex shrink-0 items-center justify-between">
@@ -339,36 +337,32 @@ export default function OnboardingFlow({
                 className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-white"
                 style={TILE_BG}
               >
-                <ArrowUpRight />
+                <IconChevronRight className="h-5 w-5" />
               </span>
             </button>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => go((step - 1) as Step)}
                 aria-label="Назад"
-                className="grid h-12 w-12 place-items-center rounded-full border border-white/35 text-white transition active:scale-90"
+                className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-white/35 text-white transition active:scale-90"
               >
                 <IconChevronLeft className="h-5 w-5" />
               </button>
-              <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-white/70">
-                {saving ? "Сохраняю…" : step === 3 ? (preview ? "Открыть демо-дашборд" : "Открыть дашборд") : "Дальше"}
-              </span>
+              {/* Подпись стоит у стрелки «вперёд» и нажимается вместе с ней */}
               <button
                 type="button"
                 onClick={advance}
                 disabled={saving}
-                aria-label={
-                  step === 3
-                    ? preview
-                      ? "Открыть демо-дашборд"
-                      : "Открыть дашборд"
-                    : "Дальше"
-                }
-                className="grid h-14 w-14 shrink-0 place-items-center rounded-full border-2 border-white text-white transition active:scale-90 disabled:opacity-60"
+                className="group flex min-w-0 items-center gap-3 disabled:opacity-60"
               >
-                <ArrowUpRight />
+                <span className="min-w-0 truncate text-[14px] font-semibold text-white">
+                  {saving ? "Сохраняю…" : step === 3 ? (preview ? "Открыть демо-дашборд" : "Открыть дашборд") : "Дальше"}
+                </span>
+                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full border-2 border-white text-white transition group-active:scale-90">
+                  <IconChevronRight className="h-5 w-5" />
+                </span>
               </button>
             </div>
           )}
@@ -383,7 +377,7 @@ export default function OnboardingFlow({
 // Шаг 1: превью выбранной месячной цели + мини-график из плиток.
 function SceneGoal({ goal }: { goal: number }) {
   return (
-    <div className="flex h-full min-h-[300px] flex-col px-5 pb-8 pt-14">
+    <div className="flex h-full min-h-[300px] flex-col px-5 pb-8 pt-[calc(var(--safe-top)+56px)]">
       <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9AA6BE]">Ваша цель</p>
       <p className="num mt-1 text-[44px] leading-none text-[#0F1C33]">{fmtMoney(goal)}</p>
       <p className="mt-1 text-[13px] text-[#9AA6BE]">в месяц · можно поменять ниже</p>
@@ -416,7 +410,7 @@ function SceneDaily({
   averageTicket: number;
 }) {
   return (
-    <div className="flex h-full min-h-[300px] flex-col px-5 pb-8 pt-14">
+    <div className="flex h-full min-h-[300px] flex-col px-5 pb-8 pt-[calc(var(--safe-top)+56px)]">
       <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9AA6BE]">
         Средний чек
       </p>
@@ -445,7 +439,7 @@ function SceneDaily({
 // Шаг 3: счётчик клиентов + аватары.
 function SceneClients({ count }: { count: number }) {
   return (
-    <div className="flex h-full min-h-[300px] flex-col px-5 pb-8 pt-14">
+    <div className="flex h-full min-h-[300px] flex-col px-5 pb-8 pt-[calc(var(--safe-top)+56px)]">
       <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9AA6BE]">Первые клиенты</p>
       <p className="num mt-1 text-[44px] leading-none text-[#0F1C33]">
         {count}

@@ -64,9 +64,9 @@ const STEPS: TutorialStep[] = [
   {
     target: '[data-tutorial="bottom-nav"]',
     badge: "Шаг 7 из 7",
-    title: "Финансы и карточки клиентов",
+    title: "Финансы, клиенты и профиль",
     description:
-      "Снизу три вкладки: «День» (главный экран), «Финансы» (круговая диаграмма, все долги списком) и «Клиенты» (поиск клиентов, абонементы и замеры веса с графиками прогресса).",
+      "Снизу четыре вкладки: «День» (главный экран), «Финансы» (круговая диаграмма, все долги списком), «Клиенты» (поиск клиентов, абонементы и замеры веса с графиками прогресса) и «Профиль» (тариф, виджеты дашборда и повтор этого тура).",
   },
 ];
 
@@ -90,7 +90,7 @@ export default function AppTutorial({ open, onClose, onSwitchTab }: TutorialProp
     const prevHtml = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
-    const main = document.querySelector("main > div.no-scrollbar, main > div.overflow-hidden");
+    const main = document.querySelector("main > div.no-scrollbar");
     if (main) main.scrollTo({ top: 0, behavior: "auto" });
     return () => {
       document.body.style.overflow = prevBody;
@@ -208,7 +208,7 @@ export default function AppTutorial({ open, onClose, onSwitchTab }: TutorialProp
       {/* Карточка-подсказка (кнопка закрытия перенесена внутрь, чтобы не перекрывать шапку с датой) */}
       <div
         className={`relative z-10 mx-auto w-full max-w-sm px-4 transition-all duration-300 ${
-          isBottomHalf ? "mt-4" : "mt-auto mb-[max(env(safe-area-inset-bottom),20px)]"
+          isBottomHalf ? "mt-[calc(var(--safe-top)+16px)]" : "mt-auto mb-[max(var(--safe-bottom),20px)]"
         }`}
       >
         <div className="rounded-[28px] bg-white p-5 shadow-2xl ring-1 ring-black/5 animate-fade-in">

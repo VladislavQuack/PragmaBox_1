@@ -177,7 +177,11 @@ export default function TimelineWidget({
     <div
       ref={scrollRef}
       onScroll={checkAlignment}
-      className={`no-scrollbar min-h-0 flex-1 overflow-auto overscroll-x-contain ${bare ? "" : "-mx-4 px-4"}`}
+      // Карточка: высота 0 + min-height по числу рядов + grow. Все ряды видны всегда,
+      // а лишнее место экрана таймлайн забирает себе. Высота содержимого при этом
+      // не влияет на размер карточки: иначе, раз растянувшись, она бы уже не сжалась.
+      style={bare ? undefined : { minHeight: contentH }}
+      className={`no-scrollbar overflow-auto overscroll-x-contain ${bare ? "min-h-0 flex-1" : "-mx-4 h-0 grow px-4"}`}
     >
       <div className="relative" style={{ width: TRACK_W, height: trackH }} onClick={handleTrackClick}>
         {marks
@@ -289,7 +293,7 @@ export default function TimelineWidget({
   return (
     <section
       ref={sectionRef as RefObject<HTMLElement>}
-      className="frame-card relative flex min-h-0 flex-1 flex-col overflow-hidden p-4"
+      className="frame-card relative flex shrink-0 grow flex-col overflow-hidden p-4"
     >
       <header className="mb-1 flex shrink-0 items-start justify-between gap-2">
         <div className="min-w-0">
