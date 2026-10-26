@@ -1,13 +1,14 @@
 import {
   boolean,
   date,
+  index,
   integer,
   pgTable,
   real,
   serial,
   text,
   timestamp,
-  unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // Тренер = пользователь Telegram. Все данные принадлежат конкретному тренеру.
@@ -54,6 +55,9 @@ export const packages = pgTable("packages", {
 });
 
 // Замеры клиента. На одну дату — одна запись (повторное сохранение обновляет её).
+// Уникальность — индексом, а не UNIQUE-ограничением: составное ограничение drizzle-kit
+// читает из базы со столбцами в случайном порядке и пересоздаёт при каждом push,
+// да ещё предлагает очистить таблицу. С индексом такого нет.
 export const measurements = pgTable(
   "measurements",
   {
@@ -75,7 +79,7 @@ export const measurements = pgTable(
     note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
   },
-  (t) => [unique("measurements_client_date").on(t.clientId, t.takenOn)],
+  (t) => [uniqueIndex("measurements_client_date").on(t.clientId, t.takenOn)],
 );
 
 export const sessions = pgTable("sessions", {
@@ -97,3 +101,58 @@ export const sessions = pgTable("sessions", {
   note: text("note"),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
 });
+
+// ───────── Бета-тест: отзывы, бонусы и приглашения ─────────
+// Это отдельные таблицы, а не новые поля в trainers. Если код выедет на Vercel
+// раньше, чем таблицы созданы в базе, основное приложение продолжит работать —
+// недоступны будут только бонусы.
+
+// Всё, что тренер написал: отзывы (боту или в приложении) и ответ «сколько готов платить».
+export const feedback = pgTable(
+  "feedback",
+  {
+    id: serial("id").primaryKey(),
+    trainerId: integer("trainer_id")
+      .notNull()
+      .references(() => trainers.id, { onDelete: "cascade" }),
+    // review — отзыв, price — ответ про цену
+    kind: text("kind").notNull().default("review"),
+    text: text("text").notNull(),
+    // bot — написал боту, app — в приложении
+    source: text("source").notNull().default("bot"),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("feedback_trainer_idx").on(t.trainerId)],
+);
+
+// Бонусные месяцы Premium после беты. Каждый вид бонуса — один раз на тренера.
+export const rewards = pgTable(
+  "rewards",
+  {
+    id: serial("id").primaryKey(),
+    trainerId: integer("trainer_id")
+      .notNull()
+      .references(() => trainers.id, { onDelete: "cascade" }),
+    // review — за отзыв, referral — за приглашённого друга
+    kind: text("kind").notNull(),
+    months: integer("months").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("rewards_trainer_kind").on(t.trainerId, t.kind)],
+);
+
+// Кто кого пригласил. Друг засчитывается, когда проходит первую настройку (activated_at).
+export const referrals = pgTable(
+  "referrals",
+  {
+    inviteeId: integer("invitee_id")
+      .primaryKey()
+      .references(() => trainers.id, { onDelete: "cascade" }),
+    inviterId: integer("inviter_id")
+      .notNull()
+      .references(() => trainers.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
+    activatedAt: timestamp("activated_at", { withTimezone: true, mode: "date" }),
+  },
+  (t) => [index("referrals_inviter_idx").on(t.inviterId)],
+);

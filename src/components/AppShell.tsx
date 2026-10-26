@@ -16,7 +16,9 @@ import ClientDetail from "@/components/clients/ClientDetail";
 import SettingsPanel, { useWidgetPrefs } from "@/components/dashboard/SettingsPanel";
 import AppTutorial from "@/components/tutorial/AppTutorial";
 import OnboardingFlow from "@/components/onboarding/OnboardingFlow";
-import PremiumOffer from "@/components/subscription/PremiumOffer";
+import BetaSheet from "@/components/beta/BetaSheet";
+import InstallSheet from "@/components/beta/InstallSheet";
+import { planLabel } from "@/lib/subscription";
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -174,7 +176,9 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   const [financeFocusClientId, setFinanceFocusClientId] = useState<number | null>(null);
   // После «Открыть дашборд» не показываем превью повторно до следующего запуска приложения.
   const [onboardingPreviewOpen, setOnboardingPreviewOpen] = useState(FORCE_ONBOARDING_PREVIEW);
-  const [premiumOpen, setPremiumOpen] = useState(false);
+  const [betaOpen, setBetaOpen] = useState(false);
+  // Кнопка «Установить на телефон» в боте открывает приложение с ?install=1
+  const [installOpen, setInstallOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [prefs, setPrefs] = useWidgetPrefs();
@@ -191,6 +195,16 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
       cancelled = true;
       teardown?.();
     };
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const wantsInstall = params.get("install") === "1" || hash.get("tgWebAppStartParam") === "install";
+    if (!wantsInstall) return;
+    // Показываем после первого рендера: на сервере адресной строки нет
+    const id = window.setTimeout(() => setInstallOpen(true), 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   const showToast = (msg: string) => {
@@ -249,7 +263,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
         <OnboardingFlow
           trainerName={data.me.name}
           preview={!needsRealOnboarding}
-          onPremium={() => setPremiumOpen(true)}
+          onBeta={() => setBetaOpen(true)}
           onDone={() => {
             setOnboardingPreviewOpen(false);
             // После настройки — на главный экран, а не туда, где удалили последнего клиента
@@ -258,12 +272,13 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             if (needsRealOnboarding) data.reload();
           }}
         />
-        <PremiumOffer
-          open={premiumOpen}
-          onClose={() => setPremiumOpen(false)}
-          clientCount={data.clients.length}
-          tier={data.me.subscriptionTier}
-        />
+        <BetaSheet open={betaOpen} onClose={() => setBetaOpen(false)} onToast={showToast} />
+        <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
+        {toast && (
+          <div className="pointer-events-none fixed bottom-[calc(var(--safe-bottom)+24px)] left-1/2 z-[140] -translate-x-1/2 whitespace-nowrap rounded-full bg-[#0F1C33]/90 px-4 py-2 text-sm font-medium text-white shadow-lg">
+            {toast}
+          </div>
+        )}
       </>
     );
   }
@@ -283,7 +298,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
         : {
             eyebrow: "Профиль",
             title: me.name || "Тренер",
-            line: [me.username ? `@${me.username}` : null, `PragmaBox ${me.subscriptionTier === "premium" ? "Premium" : "Free"}`]
+            line: [me.username ? `@${me.username}` : null, `PragmaBox ${planLabel(me.subscriptionTier)}`]
               .filter(Boolean)
               .join(" · "),
           };
@@ -431,7 +446,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onReload={data.reload}
             onToast={showToast}
             subscriptionTier={data.me.subscriptionTier}
-            onOpenPremium={() => setPremiumOpen(true)}
+            onOpenBeta={() => setBetaOpen(true)}
           />
         )}
         {tab === "profile" && (
@@ -439,9 +454,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             prefs={prefs}
             onChange={setPrefs}
             onSeed={seedDemo}
-            clientCount={data.clients.length}
-            subscriptionTier={data.me.subscriptionTier}
-            onOpenPremium={() => setPremiumOpen(true)}
+            onOpenBeta={() => setBetaOpen(true)}
             showGuides={showGuides}
             onStartTutorial={() => {
               setTab("day");
@@ -477,12 +490,8 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
 
       <AppTutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} onSwitchTab={setTab} />
 
-      <PremiumOffer
-        open={premiumOpen}
-        onClose={() => setPremiumOpen(false)}
-        clientCount={data.clients.length}
-        tier={data.me.subscriptionTier}
-      />
+      <BetaSheet open={betaOpen} onClose={() => setBetaOpen(false)} onToast={showToast} />
+      <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
 
       {toast && (
         <div className="pointer-events-none fixed bottom-[calc(var(--safe-bottom)+96px)] left-1/2 z-[60] -translate-x-1/2 whitespace-nowrap rounded-full bg-[#0F1C33]/90 px-4 py-2 text-sm font-medium text-white shadow-lg">

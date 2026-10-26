@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { del, patch, post } from "@/lib/client-api";
+import { downloadFile } from "@/lib/telegram-actions";
 import { startMs } from "@/lib/analytics";
 import {
   METRICS,
@@ -78,19 +79,26 @@ export default function ClientDetail({
   const series = useMemo(() => buildSeries(mine, metric, period), [mine, metric, period]);
   const filled = METRICS.filter((m) => mine.some((x) => x[m.key] !== null));
 
-  const exportCsv = () => {
-    const head = ["Дата", ...METRICS.map((m) => `${m.label}, ${m.unit}`), "Заметка"];
-    const lines = [...mine]
-      .sort((a, b) => a.takenOn.localeCompare(b.takenOn))
-      .map((m) => [m.takenOn, ...METRICS.map((d) => (m[d.key] ?? "")), (m.note ?? "").replace(/[;\n]/g, " ")]);
-    const csv = [head, ...lines].map((r) => r.join(";")).join("\n");
-    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${client.name}-замеры.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    onToast("Таблица выгружена");
+  // Файл собирает сервер, а скачивает сам Telegram: встроенный браузер Telegram
+  // не умеет скачивать файлы, созданные прямо на странице (раньше кнопка молчала).
+  const [exporting, setExporting] = useState(false);
+  const exportCsv = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { url, fileName } = await post<{ url: string; fileName: string }>(
+        `/api/clients/${client.id}/export`,
+        {},
+      );
+      downloadFile(url, fileName, (result) => {
+        if (result === "telegram") onToast("Таблица сохраняется");
+        else if (result === "browser") onToast("Таблица выгружена");
+      });
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : "Не удалось выгрузить таблицу");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const removeMeasurement = async (id: number) => {
@@ -388,9 +396,10 @@ export default function ClientDetail({
             <button
               type="button"
               onClick={exportCsv}
-              className="mt-3 w-full rounded-xl bg-[#F1F3F9] py-2.5 text-xs font-semibold text-[#5C6B86]"
+              disabled={exporting}
+              className="mt-3 w-full rounded-xl bg-[#F1F3F9] py-2.5 text-xs font-semibold text-[#5C6B86] disabled:opacity-60"
             >
-              Выгрузить таблицей (CSV)
+              {exporting ? "Готовим таблицу…" : "Выгрузить таблицей (CSV)"}
             </button>
           )}
         </section>

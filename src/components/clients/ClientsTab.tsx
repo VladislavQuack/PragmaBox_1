@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ApiError, post } from "@/lib/client-api";
-import { FREE_CLIENT_LIMIT } from "@/lib/subscription";
+import { clientLimitForTier } from "@/lib/subscription";
 import { startMs } from "@/lib/analytics";
 import { buildSeries, latestWithDelta, metricDef } from "@/lib/metrics";
 import { addDays, dayKey, fmtShortDate } from "@/lib/time";
@@ -32,7 +32,7 @@ export default function ClientsTab({
   onReload,
   onToast,
   subscriptionTier,
-  onOpenPremium,
+  onOpenBeta,
 }: {
   clients: ClientDTO[];
   history: SessionDTO[];
@@ -42,13 +42,15 @@ export default function ClientsTab({
   onReload: () => void;
   onToast: (msg: string) => void;
   subscriptionTier: string;
-  onOpenPremium: () => void;
+  onOpenBeta: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [limitPrompt, setLimitPrompt] = useState(false);
   const [busy, setBusy] = useState(false);
-  const freeAtLimit = subscriptionTier !== "premium" && clients.length >= FREE_CLIENT_LIMIT;
+  // В бете лимита нет — баннер о лимите не появится
+  const clientLimit = clientLimitForTier(subscriptionTier);
+  const freeAtLimit = clientLimit !== null && clients.length >= clientLimit;
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -238,13 +240,13 @@ export default function ClientsTab({
           </button>
           <div className="relative pr-8">
             <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">Лимит Free достигнут</span>
-            <h2 className="mt-1 text-[18px] font-bold">{FREE_CLIENT_LIMIT} из {FREE_CLIENT_LIMIT} клиентов уже в базе</h2>
+            <h2 className="mt-1 text-[18px] font-bold">{clientLimit} из {clientLimit} клиентов уже в базе</h2>
             <p className="mt-1.5 text-[12px] leading-relaxed text-white/78">
               Оформите Premium, чтобы добавлять клиентов без лимита и получить расширенную аналитику.
             </p>
             <button
               type="button"
-              onClick={onOpenPremium}
+              onClick={onOpenBeta}
               className="mt-3 rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#4A5BF0] transition active:scale-95"
             >
               Оформить Premium →

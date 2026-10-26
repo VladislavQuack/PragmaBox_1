@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { REFERRAL_BONUS_MONTHS, REVIEW_BONUS_MONTHS, monthsLabel } from "@/lib/beta";
+import InstallCard from "@/components/beta/InstallCard";
+
 
 export interface WidgetPrefs {
   income: boolean;
@@ -52,9 +55,7 @@ interface SettingsPanelProps {
   onChange: (p: WidgetPrefs) => void;
   onSeed: () => void;
   onStartTutorial?: () => void;
-  clientCount: number;
-  subscriptionTier: string;
-  onOpenPremium?: () => void;
+  onOpenBeta?: () => void;
   // Инструкции по боту и деплою видны только владельцу приложения
   showGuides?: boolean;
 }
@@ -70,19 +71,16 @@ export default function SettingsPanel({
   onChange,
   onSeed,
   onStartTutorial,
-  clientCount,
-  subscriptionTier,
-  onOpenPremium,
+  onOpenBeta,
   showGuides = false,
 }: SettingsPanelProps) {
-  const premium = subscriptionTier === "premium";
 
   return (
     <div className="space-y-4 pb-4">
-      {onOpenPremium && (
+      {onOpenBeta && (
         <button
           type="button"
-          onClick={onOpenPremium}
+          onClick={onOpenBeta}
           className="relative w-full overflow-hidden rounded-[22px] p-4 text-left text-white shadow-lg shadow-[#4A5BF0]/25 transition active:scale-[0.98]"
           style={{ background: "linear-gradient(135deg, #6C82FF 0%, #4A5BF0 55%, #3D4EDB 100%)" }}
         >
@@ -90,19 +88,20 @@ export default function SettingsPanel({
           <span className="relative flex items-start justify-between gap-4">
             <span>
               <span className="inline-flex rounded-full bg-white/18 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]">
-                PragmaBox {premium ? "Premium" : "Free"}
+                PragmaBox Beta
               </span>
-              <span className="mt-2 block text-[17px] font-bold">
-                {premium ? "Все возможности доступны" : "Уберите лимит на клиентов"}
-              </span>
+              <span className="mt-2 block text-[17px] font-bold">Все функции бесплатно</span>
               <span className="mt-1 block text-[12px] leading-relaxed text-white/78">
-                {premium ? "Спасибо, что выбираете PragmaBox." : `${clientCount} из 3 клиентов на Free-плане · Premium от 299 ₽/мес`}
+                Клиенты без лимита. За отзыв — {monthsLabel(REVIEW_BONUS_MONTHS)} Premium, за друга —{" "}
+                {monthsLabel(REFERRAL_BONUS_MONTHS)}
               </span>
             </span>
             <span className="mt-2 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/18 text-lg font-bold">→</span>
           </span>
         </button>
       )}
+
+      <InstallCard />
 
       {onStartTutorial && (
         <button
