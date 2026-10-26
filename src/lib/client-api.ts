@@ -27,12 +27,21 @@ export interface TgWebApp {
   isFullscreen?: boolean;
   requestFullscreen?: () => void;
   exitFullscreen?: () => void;
-  onEvent?: (event: string, cb: () => void) => void;
-  offEvent?: (event: string, cb: () => void) => void;
+  // Bot API 8.0+: иконка мини-аппа на главном экране телефона
+  addToHomeScreen?: () => void;
+  checkHomeScreenStatus?: (cb: (status: HomeScreenStatus) => void) => void;
+  // Bot API 8.0+: родное окно «Скачать файл». Файл Telegram скачивает сам по https-ссылке
+  downloadFile?: (params: { url: string; file_name: string }, cb?: (accepted: boolean) => void) => void;
+  openLink?: (url: string) => void;
+  openTelegramLink?: (url: string) => void;
+  onEvent?: (event: string, cb: (payload?: unknown) => void) => void;
+  offEvent?: (event: string, cb: (payload?: unknown) => void) => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
   HapticFeedback?: unknown;
 }
+
+export type HomeScreenStatus = "unsupported" | "unknown" | "added" | "missed";
 
 export function telegramWebApp(): TgWebApp | undefined {
   if (typeof window === "undefined") return undefined;

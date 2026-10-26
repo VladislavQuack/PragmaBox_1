@@ -1,8 +1,10 @@
 import { count, eq } from "drizzle-orm";
+import { after } from "next/server";
 import { db } from "@/db";
 import { clients, trainers } from "@/db/schema";
-import { FREE_CLIENT_LIMIT, clientLimitForTier } from "@/lib/subscription";
+import { ONBOARDING_MAX_CLIENTS, clientLimitForTier } from "@/lib/subscription";
 import { withTrainer } from "@/lib/server/auth";
+import { onTrainerActivated } from "@/lib/server/beta";
 import { badRequest, toInt, toText } from "@/lib/server/data";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +18,8 @@ export function POST(req: Request) {
     const avgSessionPrice = Math.min(Math.max(toInt(body.averageTicket, 1500), 0), 100_000);
     const rawNames = Array.isArray(body.clientNames) ? body.clientNames : [];
     const names = [...new Set(rawNames.map(toText).filter((v): v is string => Boolean(v)))];
-    if (names.length > FREE_CLIENT_LIMIT) {
-      return badRequest(`На первом запуске можно добавить не больше ${FREE_CLIENT_LIMIT} клиентов.`);
+    if (names.length > ONBOARDING_MAX_CLIENTS) {
+      return badRequest(`На первом запуске можно добавить не больше ${ONBOARDING_MAX_CLIENTS} клиентов.`);
     }
 
     const limit = clientLimitForTier(trainer.subscriptionTier);
@@ -40,6 +42,13 @@ export function POST(req: Request) {
         .where(eq(trainers.id, trainer.id));
     });
 
+    // Тренер начал пользоваться: засчитываем приглашение другу и сообщаем владельцу.
+    // После ответа — бонусы не должны задерживать вход в приложение.
+    after(() =>
+      onTrainerActivated(trainer, Number(existing) + names.length).catch((e) =>
+        console.error("[beta] activation failed:", e),
+      ),
+    );
     return Response.json({ ok: true, monthlyGoal, addedClients: names.length });
   });
 }

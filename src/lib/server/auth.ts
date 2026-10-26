@@ -5,6 +5,8 @@ import crypto from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { trainers } from "@/db/schema";
+import { parseRefPayload } from "@/lib/beta";
+import { recordReferral } from "@/lib/server/beta";
 
 export const INIT_DATA_HEADER = "x-telegram-init-data";
 const MAX_AGE_SEC = 24 * 60 * 60;
@@ -58,7 +60,9 @@ export function verifyInitData(initData: string, botToken: string): TgUser | nul
   }
 }
 
-async function upsertTrainer(input: {
+// Находит тренера по Telegram ID или создаёт нового. Вызывается и из мини-аппа, и из бота.
+// Поле, переданное как undefined, не трогаем: бот, например, не знает фото профиля.
+export async function upsertTrainer(input: {
   tgId: string;
   name: string;
   username?: string | null;
@@ -66,16 +70,15 @@ async function upsertTrainer(input: {
 }): Promise<Trainer> {
   const [existing] = await db.select().from(trainers).where(eq(trainers.tgId, input.tgId)).limit(1);
   if (existing) {
+    const next = {
+      name: input.name,
+      username: input.username === undefined ? existing.username : input.username,
+      photoUrl: input.photoUrl === undefined ? existing.photoUrl : input.photoUrl,
+    };
     const changed =
-      existing.name !== input.name ||
-      existing.username !== (input.username ?? null) ||
-      existing.photoUrl !== (input.photoUrl ?? null);
+      existing.name !== next.name || existing.username !== next.username || existing.photoUrl !== next.photoUrl;
     if (!changed) return existing;
-    const [updated] = await db
-      .update(trainers)
-      .set({ name: input.name, username: input.username ?? null, photoUrl: input.photoUrl ?? null })
-      .where(eq(trainers.id, existing.id))
-      .returning();
+    const [updated] = await db.update(trainers).set(next).where(eq(trainers.id, existing.id)).returning();
     return updated;
   }
   // Новый тренер. При первом запуске приложение шлёт несколько запросов сразу,
@@ -113,12 +116,21 @@ export async function requireTrainer(req: Request): Promise<Trainer> {
       throw new AuthError("Подпись Telegram не подошла");
     }
     const name = [user.first_name, user.last_name].filter(Boolean).join(" ").trim() || `id${user.id}`;
-    return upsertTrainer({
+    const trainer = await upsertTrainer({
       tgId: String(user.id),
       name,
       username: user.username ?? null,
       photoUrl: user.photo_url ?? null,
     });
+    // Мини-апп открыли по ссылке-приглашению (…?startapp=ref_42): запоминаем, кто позвал.
+    // Ошибка здесь не должна мешать входу — бонусы вторичны.
+    const inviterId = parseRefPayload(new URLSearchParams(initData).get("start_param"));
+    if (inviterId) {
+      await recordReferral(trainer, inviterId).catch((e) =>
+        console.warn("[beta] referral from start_param skipped:", e instanceof Error ? e.message : e),
+      );
+    }
+    return trainer;
   }
 
   if (!demoAllowed()) {

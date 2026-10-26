@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { post } from "@/lib/client-api";
-import { FREE_CLIENT_LIMIT } from "@/lib/subscription";
+import { ONBOARDING_MAX_CLIENTS } from "@/lib/subscription";
 import { fmtMoney } from "@/lib/time";
 import { IconCheck, IconChevronLeft, IconChevronRight, IconPlus } from "@/components/ui/icons";
 import { haptic } from "@/components/dashboard/TimelineCreator";
@@ -33,12 +33,12 @@ const TILE_BG = {
 export default function OnboardingFlow({
   trainerName,
   onDone,
-  onPremium,
+  onBeta,
   preview = false,
 }: {
   trainerName: string;
   onDone: () => void;
-  onPremium?: () => void;
+  onBeta?: () => void;
   preview?: boolean;
 }) {
   const [step, setStep] = useState<Step>(0);
@@ -286,7 +286,7 @@ export default function OnboardingFlow({
                     )}
                   </div>
                 ))}
-                {names.length < FREE_CLIENT_LIMIT && (
+                {names.length < ONBOARDING_MAX_CLIENTS && (
                   <button
                     type="button"
                     onClick={() => setNames((n) => [...n, ""])}
@@ -297,17 +297,17 @@ export default function OnboardingFlow({
                   </button>
                 )}
                 <div className="rounded-2xl bg-white/14 p-3.5">
-                  <p className="text-[14px] font-bold">Нужна база больше трёх клиентов?</p>
+                  <p className="text-[14px] font-bold">Клиентов больше трёх?</p>
                   <p className="mt-1 text-[12px] leading-relaxed text-white/78">
-                    Premium снимает лимит и открывает расширенную аналитику и экспорт.
+                    Остальных добавите уже в приложении: идёт бета, лимита нет и все функции бесплатны.
                   </p>
-                  {onPremium && (
+                  {onBeta && (
                     <button
                       type="button"
-                      onClick={onPremium}
+                      onClick={onBeta}
                       className="mt-2.5 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-[#4A5BF0] transition active:scale-95"
                     >
-                      Подробнее о Premium →
+                      Что даёт бета →
                     </button>
                   )}
                 </div>
@@ -443,11 +443,11 @@ function SceneClients({ count }: { count: number }) {
       <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9AA6BE]">Первые клиенты</p>
       <p className="num mt-1 text-[44px] leading-none text-[#0F1C33]">
         {count}
-        <span className="text-[22px] text-[#9AA6BE]"> / {FREE_CLIENT_LIMIT}</span>
+        <span className="text-[22px] text-[#9AA6BE]"> / {ONBOARDING_MAX_CLIENTS}</span>
       </p>
       <div className="mt-auto flex items-center gap-3 pt-4">
         <div className="flex -space-x-3">
-          {Array.from({ length: FREE_CLIENT_LIMIT }, (_, i) => (
+          {Array.from({ length: ONBOARDING_MAX_CLIENTS }, (_, i) => (
             <span
               key={i}
               className={`grid h-12 w-12 place-items-center rounded-full border-[3px] border-white text-[15px] font-bold ${
@@ -460,9 +460,9 @@ function SceneClients({ count }: { count: number }) {
           ))}
         </div>
         <p className="text-[12px] leading-snug text-[#9AA6BE]">
-          Free — до трёх.
+          Для старта — трое.
           <br />
-          Остальных — в Premium.
+          Остальных добавите потом.
         </p>
       </div>
     </div>
