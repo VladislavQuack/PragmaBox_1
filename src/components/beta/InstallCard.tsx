@@ -3,10 +3,11 @@
 import { useHomeScreen } from "@/lib/telegram-actions";
 import { haptic } from "@/components/dashboard/TimelineCreator";
 
-// Карточка «Установить на главный экран». Где Telegram не умеет добавлять иконку
-// (компьютер, старые версии) — не показываем вовсе.
-export default function InstallCard() {
-  const { status, add, canAdd } = useHomeScreen();
+// Карточка «Установить на главный экран» в профиле. Сама иконку не добавляет, а открывает
+// окно установки: там видно, что происходит, и есть подсказки, если телефон не дал добавить.
+// Где Telegram не умеет добавлять иконку (компьютер, старые версии) — не показываем вовсе.
+export default function InstallCard({ onOpen }: { onOpen: () => void }) {
+  const { status, canAdd } = useHomeScreen();
 
   if (status === "added") {
     return (
@@ -26,7 +27,7 @@ export default function InstallCard() {
       type="button"
       onClick={() => {
         haptic("select");
-        add();
+        onOpen();
       }}
       className="flex w-full items-center gap-3 rounded-2xl bg-white p-4 text-left shadow-sm transition active:scale-[0.98]"
     >

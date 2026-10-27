@@ -21,12 +21,14 @@ interface BetaSheetProps {
   open: boolean;
   onClose: () => void;
   onToast: (msg: string) => void;
+  // Окно «Установить на главный экран» (открывается поверх)
+  onInstall?: () => void;
 }
 
 // Экран беты: всё бесплатно, а за отзыв и приглашённого друга — Premium после запуска.
-export default function BetaSheet({ open, onClose, onToast }: BetaSheetProps) {
+export default function BetaSheet({ open, onClose, onToast, onInstall }: BetaSheetProps) {
   if (!open) return null;
-  return <BetaSheetBody onClose={onClose} onToast={onToast} />;
+  return <BetaSheetBody onClose={onClose} onToast={onToast} onInstall={onInstall} />;
 }
 
 interface ReviewResponse {
@@ -37,7 +39,7 @@ interface ReviewResponse {
 
 const card = "rounded-[22px] border border-[#E0E5F1] bg-white p-4";
 
-function BetaSheetBody({ onClose, onToast }: Omit<BetaSheetProps, "open">) {
+function BetaSheetBody({ onClose, onToast, onInstall }: Omit<BetaSheetProps, "open">) {
   const [status, setStatus] = useState<BetaStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -311,7 +313,7 @@ function BetaSheetBody({ onClose, onToast }: Omit<BetaSheetProps, "open">) {
             </>
           )}
 
-          <InstallCard />
+          {onInstall && <InstallCard onOpen={onInstall} />}
 
           <p className="px-2 pt-1 text-center text-[11px] leading-relaxed text-[#9AA6BE]">
             Бонусы включатся сами, когда выйдет платная версия. Бонусы за отзыв и за друга складываются.

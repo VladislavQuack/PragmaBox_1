@@ -262,6 +262,11 @@ export default function DeployGuide() {
             Если раньше создавал мини-апп через <Code>/newapp</Code>, поправь адрес и там:{" "}
             <Code>/myapps</Code> → выбрать приложение → <Code>Edit Web App URL</Code>.
           </p>
+          <p>
+            Главное мини-приложение тоже должно смотреть на адрес с Vercel: <Code>Bot Settings</Code> →{" "}
+            <Code>Configure Mini App</Code> (если выключено — <Code>Enable Mini App</Code>). Без него иконка на
+            главном экране телефона не откроет приложение.
+          </p>
           <p>Закрой приложение в Telegram и открой заново: оно кеширует старую версию.</p>
         </Step>
       </ol>

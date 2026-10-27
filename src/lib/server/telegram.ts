@@ -51,18 +51,30 @@ export function safeEqual(a: string, b: string): boolean {
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 }
 
-// Имя бота нужно для ссылок-приглашений. Узнаём один раз на процесс.
-let usernameCache: string | null = null;
-export async function botUsername(): Promise<string | null> {
-  if (usernameCache) return usernameCache;
+export interface BotInfo {
+  username: string | null;
+  // Включено ли главное мини-приложение (BotFather → Configure Mini App).
+  // Иконка на главном экране телефона открывает именно его
+  hasMainWebApp: boolean;
+}
+
+// Данные бота из getMe. Имя нужно для ссылок-приглашений — узнаём один раз на процесс;
+// fresh — перечитать (настройки в BotFather могли поменяться).
+let infoCache: BotInfo | null = null;
+export async function botInfo(fresh = false): Promise<BotInfo | null> {
+  if (infoCache && !fresh) return infoCache;
   if (!botToken()) return null;
   try {
-    const me = await tgCall<{ username?: string }>("getMe");
-    usernameCache = me.username ?? null;
+    const me = await tgCall<{ username?: string; has_main_web_app?: boolean }>("getMe");
+    infoCache = { username: me.username ?? null, hasMainWebApp: me.has_main_web_app === true };
   } catch (e) {
     console.error("[bot] getMe failed:", e instanceof Error ? e.message : e);
   }
-  return usernameCache;
+  return infoCache;
+}
+
+export async function botUsername(): Promise<string | null> {
+  return (await botInfo())?.username ?? null;
 }
 
 // Постоянный адрес приложения — для кнопок мини-аппа в чате и адреса вебхука.

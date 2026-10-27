@@ -177,7 +177,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   // После «Открыть дашборд» не показываем превью повторно до следующего запуска приложения.
   const [onboardingPreviewOpen, setOnboardingPreviewOpen] = useState(FORCE_ONBOARDING_PREVIEW);
   const [betaOpen, setBetaOpen] = useState(false);
-  // Кнопка «Установить на телефон» в боте открывает приложение с ?install=1
+  // Окно установки: кнопка «Установить на телефон» в боте (адрес с ?install=1) или карточка в профиле
   const [installOpen, setInstallOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -272,7 +272,12 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             if (needsRealOnboarding) data.reload();
           }}
         />
-        <BetaSheet open={betaOpen} onClose={() => setBetaOpen(false)} onToast={showToast} />
+        <BetaSheet
+          open={betaOpen}
+          onClose={() => setBetaOpen(false)}
+          onToast={showToast}
+          onInstall={() => setInstallOpen(true)}
+        />
         <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
         {toast && (
           <div className="pointer-events-none fixed bottom-[calc(var(--safe-bottom)+24px)] left-1/2 z-[140] -translate-x-1/2 whitespace-nowrap rounded-full bg-[#0F1C33]/90 px-4 py-2 text-sm font-medium text-white shadow-lg">
@@ -455,6 +460,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onChange={setPrefs}
             onSeed={seedDemo}
             onOpenBeta={() => setBetaOpen(true)}
+            onInstall={() => setInstallOpen(true)}
             showGuides={showGuides}
             onStartTutorial={() => {
               setTab("day");
@@ -490,7 +496,12 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
 
       <AppTutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} onSwitchTab={setTab} />
 
-      <BetaSheet open={betaOpen} onClose={() => setBetaOpen(false)} onToast={showToast} />
+      <BetaSheet
+        open={betaOpen}
+        onClose={() => setBetaOpen(false)}
+        onToast={showToast}
+        onInstall={() => setInstallOpen(true)}
+      />
       <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
 
       {toast && (

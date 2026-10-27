@@ -56,6 +56,8 @@ interface SettingsPanelProps {
   onSeed: () => void;
   onStartTutorial?: () => void;
   onOpenBeta?: () => void;
+  // Окно «Установить на главный экран»
+  onInstall?: () => void;
   // Инструкции по боту и деплою видны только владельцу приложения
   showGuides?: boolean;
 }
@@ -72,6 +74,7 @@ export default function SettingsPanel({
   onSeed,
   onStartTutorial,
   onOpenBeta,
+  onInstall,
   showGuides = false,
 }: SettingsPanelProps) {
 
@@ -101,7 +104,7 @@ export default function SettingsPanel({
         </button>
       )}
 
-      <InstallCard />
+      {onInstall && <InstallCard onOpen={onInstall} />}
 
       {onStartTutorial && (
         <button
