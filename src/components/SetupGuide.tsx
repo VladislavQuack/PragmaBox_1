@@ -112,6 +112,10 @@ export default function SetupGuide({ hasToken }: { hasToken: boolean }) {
             <Code>Bot Settings</Code> → <Code>Menu Button</Code> → <Code>Edit menu button URL</Code>{" "}
             → тот же адрес.
           </p>
+          <p>
+            И включи главное мини-приложение: <Code>Bot Settings</Code> → <Code>Configure Mini App</Code> →{" "}
+            <Code>Enable Mini App</Code> → тот же адрес. Иконка на главном экране телефона открывает именно его.
+          </p>
         </Step>
 
         <Step n={5} title="Выложи на постоянный адрес">

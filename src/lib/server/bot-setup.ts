@@ -1,6 +1,6 @@
 // Настройка бота без ручных шагов: адрес вебхука, меню команд и описание.
 // Запускается сама при открытии приложения на проде; проверить вручную — /api/telegram/setup.
-import { appOrigin, botToken, tgCall, webhookSecret } from "@/lib/server/telegram";
+import { appOrigin, botInfo, botToken, tgCall, webhookSecret } from "@/lib/server/telegram";
 
 export const BOT_COMMANDS = [
   { command: "start", description: "Главное меню" },
@@ -28,6 +28,15 @@ export interface BotSetupResult {
   changed?: string[];
   pendingUpdates?: number;
   lastError?: string | null;
+  // Главное мини-приложение в BotFather: без него иконка на главном экране не откроет приложение
+  mainMiniApp?: boolean | null;
+  // Что владельцу стоит поправить руками
+  warnings?: string[];
+}
+
+// Main Mini App нельзя включить через Bot API — только в BotFather
+function mainMiniAppWarning(origin: string) {
+  return `Не включено главное мини-приложение: иконка на главном экране телефона не будет открывать PragmaBox. BotFather → /mybots → бот → Bot Settings → Configure Mini App → Enable Mini App → ${origin}`;
 }
 
 interface WebhookInfo {
@@ -70,12 +79,18 @@ export async function ensureBotSetup(): Promise<BotSetupResult> {
     changed.push("short_description");
   }
 
+  const me = await botInfo(true);
+  const mainMiniApp = me ? me.hasMainWebApp : null;
+  const warnings = mainMiniApp === false ? [mainMiniAppWarning(origin)] : [];
+
   return {
     ok: true,
     webhook: url,
     changed,
     pendingUpdates: info.pending_update_count ?? 0,
     lastError: changed.includes("webhook") ? null : (info.last_error_message ?? null),
+    mainMiniApp,
+    warnings,
   };
 }
 
@@ -94,6 +109,7 @@ export async function ensureBotSetupOnce() {
     if (result.ok) {
       done = true;
       if (result.changed?.length) console.log(`[bot] setup updated: ${result.changed.join(", ")}`);
+      for (const warning of result.warnings ?? []) console.warn(`[bot] ${warning}`);
     } else {
       console.warn(`[bot] setup skipped: ${result.reason}`);
     }

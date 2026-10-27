@@ -43,9 +43,21 @@ export interface TgWebApp {
 
 export type HomeScreenStatus = "unsupported" | "unknown" | "added" | "missed";
 
+// Нижний слой telegram-web-app.js: сырые события клиента. Нужен для событий,
+// которые WebApp наружу не пробрасывает (например, home_screen_failed).
+export interface TgWebView {
+  onEvent?: (event: string, cb: (eventType: string, eventData?: unknown) => void) => void;
+  offEvent?: (event: string, cb: (eventType: string, eventData?: unknown) => void) => void;
+}
+
 export function telegramWebApp(): TgWebApp | undefined {
   if (typeof window === "undefined") return undefined;
   return (window as unknown as { Telegram?: { WebApp?: TgWebApp } }).Telegram?.WebApp;
+}
+
+export function telegramWebView(): TgWebView | undefined {
+  if (typeof window === "undefined") return undefined;
+  return (window as unknown as { Telegram?: { WebView?: TgWebView } }).Telegram?.WebView;
 }
 
 // initData из объекта Telegram. Плюс запасной путь: Telegram также кладёт
