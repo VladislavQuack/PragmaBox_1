@@ -54,7 +54,6 @@ interface SettingsPanelProps {
   prefs: WidgetPrefs;
   onChange: (p: WidgetPrefs) => void;
   onSeed: () => void;
-  onStartTutorial?: () => void;
   onOpenBeta?: () => void;
   // Окно «Установить на главный экран»
   onInstall?: () => void;
@@ -72,7 +71,6 @@ export default function SettingsPanel({
   prefs,
   onChange,
   onSeed,
-  onStartTutorial,
   onOpenBeta,
   onInstall,
   showGuides = false,
@@ -105,22 +103,6 @@ export default function SettingsPanel({
       )}
 
       {onInstall && <InstallCard onOpen={onInstall} />}
-
-      {onStartTutorial && (
-        <button
-          type="button"
-          onClick={onStartTutorial}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#4A5BF0]/25 transition active:scale-[0.98]"
-          style={{
-            background: "linear-gradient(135deg, #007aff 0%, #005bb5 100%)",
-          }}
-        >
-          <span>Пройти тур по приложению</span>
-          <span className="grid h-6 w-6 place-items-center rounded-full bg-white/20 text-xs font-bold">
-            →
-          </span>
-        </button>
-      )}
 
       <section className="space-y-2">
         <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Виджеты на дашборде</p>
