@@ -54,6 +54,8 @@ interface SettingsPanelProps {
   prefs: WidgetPrefs;
   onChange: (p: WidgetPrefs) => void;
   onSeed: () => void;
+  // Повтор тура по приложению (сам он запускается после онбординга)
+  onStartTutorial?: () => void;
   onOpenBeta?: () => void;
   // Окно «Установить на главный экран»
   onInstall?: () => void;
@@ -71,6 +73,7 @@ export default function SettingsPanel({
   prefs,
   onChange,
   onSeed,
+  onStartTutorial,
   onOpenBeta,
   onInstall,
   showGuides = false,
@@ -156,6 +159,22 @@ export default function SettingsPanel({
           <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">Работает только если база пустая</span>
         </button>
       </section>
+
+      {/* Обычная белая карточка, как остальные пункты профиля: тур и так показывается
+          после онбординга, а здесь его можно открыть ещё раз */}
+      {onStartTutorial && (
+        <section className="space-y-2">
+          <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Помощь</p>
+          <button
+            type="button"
+            onClick={onStartTutorial}
+            className="w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-[#0F1C33] shadow-sm"
+          >
+            Повторить обучение
+            <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">Короткий тур по экранам приложения</span>
+          </button>
+        </section>
+      )}
     </div>
   );
 }

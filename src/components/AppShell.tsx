@@ -511,6 +511,11 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onOpenBeta={() => setBetaOpen(true)}
             onInstall={() => setInstallOpen(true)}
             showGuides={showGuides}
+            onStartTutorial={() => {
+              // Тур подсвечивает элементы главного экрана: сначала переходим на «День»
+              setTab("day");
+              window.setTimeout(() => setTutorialOpen(true), 250);
+            }}
           />
         )}
       </div>
