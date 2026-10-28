@@ -54,6 +54,7 @@ interface SettingsPanelProps {
   prefs: WidgetPrefs;
   onChange: (p: WidgetPrefs) => void;
   onSeed: () => void;
+  // Повтор тура по приложению (сам он запускается после онбординга)
   onStartTutorial?: () => void;
   onOpenBeta?: () => void;
   // Окно «Установить на главный экран»
@@ -105,22 +106,6 @@ export default function SettingsPanel({
       )}
 
       {onInstall && <InstallCard onOpen={onInstall} />}
-
-      {onStartTutorial && (
-        <button
-          type="button"
-          onClick={onStartTutorial}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#4A5BF0]/25 transition active:scale-[0.98]"
-          style={{
-            background: "linear-gradient(135deg, #007aff 0%, #005bb5 100%)",
-          }}
-        >
-          <span>Пройти тур по приложению</span>
-          <span className="grid h-6 w-6 place-items-center rounded-full bg-white/20 text-xs font-bold">
-            →
-          </span>
-        </button>
-      )}
 
       <section className="space-y-2">
         <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Виджеты на дашборде</p>
@@ -174,6 +159,22 @@ export default function SettingsPanel({
           <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">Работает только если база пустая</span>
         </button>
       </section>
+
+      {/* Обычная белая карточка, как остальные пункты профиля: тур и так показывается
+          после онбординга, а здесь его можно открыть ещё раз */}
+      {onStartTutorial && (
+        <section className="space-y-2">
+          <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Помощь</p>
+          <button
+            type="button"
+            onClick={onStartTutorial}
+            className="w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-[#0F1C33] shadow-sm"
+          >
+            Повторить обучение
+            <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">Короткий тур по экранам приложения</span>
+          </button>
+        </section>
+      )}
     </div>
   );
 }

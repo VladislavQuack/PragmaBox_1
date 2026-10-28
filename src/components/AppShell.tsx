@@ -26,6 +26,29 @@ const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 // Обычно не нужен: настоящий онбординг открывается сам, когда в базе нет клиентов.
 const FORCE_ONBOARDING_PREVIEW = false;
 
+// Тур по приложению запускается сам после каждого онбординга. Отметка хранится и в памяти,
+// и на устройстве: если закрыть мини-апп до конца тура, он откроется при следующем запуске.
+const TUTORIAL_PENDING_KEY = "pragmabox_tutorial_pending_v1";
+// Пауза перед туром, чтобы дашборд успел появиться (анимация входа длится около 0,55 с)
+const AUTO_TUTORIAL_DELAY_MS = 800;
+
+function rememberTutorialPending(pending: boolean) {
+  try {
+    if (pending) window.localStorage.setItem(TUTORIAL_PENDING_KEY, "1");
+    else window.localStorage.removeItem(TUTORIAL_PENDING_KEY);
+  } catch {
+    // приватный режим: тур всё равно запустится по отметке в памяти
+  }
+}
+
+function storedTutorialPending(): boolean {
+  try {
+    return window.localStorage.getItem(TUTORIAL_PENDING_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 const startOfWeek = (d: Date) => addDays(d, -((d.getDay() + 6) % 7));
 
 const initialsOf = (name?: string) =>
@@ -180,6 +203,8 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   // Окно установки: кнопка «Установить на телефон» в боте (адрес с ?install=1) или карточка в профиле
   const [installOpen, setInstallOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  // Онбординг только что пройден: как только появится дашборд, запускаем тур
+  const [tutorialPending, setTutorialPending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [prefs, setPrefs] = useWidgetPrefs();
 
@@ -227,6 +252,32 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
     return m;
   }, [data.history]);
 
+  // Онбординг открывается, когда в базе нет ни одного клиента — и у нового тренера,
+  // и после удаления последнего клиента (сервер при этом сбрасывает onboardingComplete).
+  // Флаг нужен, чтобы не зациклиться: если пройти онбординг, не добавив клиентов,
+  // он ставится, и дальше тренер попадает на пустой дашборд.
+  const needsRealOnboarding = Boolean(data.me && !data.me.onboardingComplete && data.clients.length === 0);
+  const dashboardVisible =
+    !data.authError &&
+    Boolean(data.now && data.todayKey && data.activeKey && data.me) &&
+    !needsRealOnboarding &&
+    !onboardingPreviewOpen;
+  const sheetOpen = betaOpen || installOpen;
+
+  // Автозапуск тура после онбординга. Если поверх открыто окно беты или установки,
+  // ждём, пока его закроют, иначе подсветка окажется под ним.
+  useEffect(() => {
+    if (!dashboardVisible || sheetOpen || tutorialOpen) return;
+    if (!tutorialPending && !storedTutorialPending()) return;
+    const id = window.setTimeout(() => {
+      setTab("day");
+      setOpenClientId(null);
+      setTutorialPending(false);
+      setTutorialOpen(true);
+    }, AUTO_TUTORIAL_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, [dashboardVisible, sheetOpen, tutorialOpen, tutorialPending]);
+
   const seedDemo = async () => {
     if (!data.now || !data.todayKey) return;
     try {
@@ -252,11 +303,6 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
     return <div className="grid min-h-dvh place-items-center bg-[#F1F3F9] text-sm text-[#9AA6BE]">Загрузка…</div>;
   }
 
-  // Онбординг открывается, когда в базе нет ни одного клиента — и у нового тренера,
-  // и после удаления последнего клиента (сервер при этом сбрасывает onboardingComplete).
-  // Флаг нужен, чтобы не зациклиться: если пройти онбординг, не добавив клиентов,
-  // он ставится, и дальше тренер попадает на пустой дашборд.
-  const needsRealOnboarding = !data.me.onboardingComplete && data.clients.length === 0;
   if (needsRealOnboarding || onboardingPreviewOpen) {
     return (
       <>
@@ -269,6 +315,9 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             // После настройки — на главный экран, а не туда, где удалили последнего клиента
             setTab("day");
             setOpenClientId(null);
+            // Следом сам запускается тур: искать кнопку в профиле не нужно
+            rememberTutorialPending(true);
+            setTutorialPending(true);
             if (needsRealOnboarding) data.reload();
           }}
         />
@@ -463,8 +512,9 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onInstall={() => setInstallOpen(true)}
             showGuides={showGuides}
             onStartTutorial={() => {
+              // Тур подсвечивает элементы главного экрана: сначала переходим на «День»
               setTab("day");
-              setTimeout(() => setTutorialOpen(true), 250);
+              window.setTimeout(() => setTutorialOpen(true), 250);
             }}
           />
         )}
@@ -494,7 +544,15 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
         )}
       </Sheet>
 
-      <AppTutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} onSwitchTab={setTab} />
+      <AppTutorial
+        open={tutorialOpen}
+        onClose={() => {
+          // Тур досмотрен или закрыт крестиком — больше сам не запускается
+          rememberTutorialPending(false);
+          setTutorialOpen(false);
+        }}
+        onSwitchTab={setTab}
+      />
 
       <BetaSheet
         open={betaOpen}
