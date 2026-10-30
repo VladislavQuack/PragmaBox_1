@@ -46,9 +46,16 @@ export function setupTelegramShell(tg: TgWebApp): () => void {
   tg.setHeaderColor?.(TG_HEADER_COLOR);
   tg.setBackgroundColor?.(TG_BACKGROUND_COLOR);
 
+  // Высота главного экрана: видимая часть окна Telegram, но не больше самого окна.
+  // Telegram иногда сообщает высоту чуть больше настоящей (дробные пиксели, системные
+  // панели) — тогда экран вылезал за окно и вся страница вместе с нижним меню
+  // немного прокручивалась. clientHeight корня — высота окна, она не меняется от
+  // увеличения пальцами, в отличие от innerHeight на iPhone.
   const applyViewport = () => {
-    const h = tg.viewportStableHeight;
-    if (h) root.style.setProperty("--app-h", `${h}px`);
+    const stable = tg.viewportStableHeight;
+    const win = root.clientHeight || window.innerHeight;
+    const h = stable && stable > 0 ? Math.min(stable, win) : win;
+    if (h > 0) root.style.setProperty("--app-h", `${h}px`);
   };
   // Отметка для CSS: в полноэкранном режиме у шторок на весь экран скругляются углы
   const applyFullscreen = () => root.toggleAttribute("data-tg-fullscreen", Boolean(tg.isFullscreen));
@@ -57,10 +64,13 @@ export function setupTelegramShell(tg: TgWebApp): () => void {
   applyFullscreen();
   tg.onEvent?.("viewportChanged", applyViewport);
   tg.onEvent?.("fullscreenChanged", applyFullscreen);
+  // Окно меняет размер и без события Telegram — например, при открытой клавиатуре
+  window.addEventListener("resize", applyViewport);
 
   return () => {
     tg.offEvent?.("viewportChanged", applyViewport);
     tg.offEvent?.("fullscreenChanged", applyFullscreen);
+    window.removeEventListener("resize", applyViewport);
   };
 }
 

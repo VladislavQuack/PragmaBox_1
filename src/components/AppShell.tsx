@@ -10,6 +10,8 @@ import { useAppData } from "@/lib/use-app-data";
 import { addDays, dayKey, fmtDayLong, fmtMoney, fmtWeekday, parseDayKey, startOfMonth } from "@/lib/time";
 import { debtSummary, incomeSummary, type Reminder } from "@/lib/analytics";
 import Sheet from "@/components/ui/Sheet";
+import LottiePlayer from "@/components/ui/LottiePlayer";
+import { loadPragmaboxAnimation } from "@/components/ui/lotties";
 import { IconChevronDown } from "@/components/ui/icons";
 import BottomNav, { type Tab } from "@/components/BottomNav";
 import DayTab from "@/components/dashboard/Dashboard";
@@ -330,9 +332,8 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
     return (
       <div role="status" aria-label="Загрузка" className="grid min-h-dvh place-items-center bg-[#F1F3F9]">
         <div className="flex flex-col items-center gap-3">
-          <span className="text-[22px] font-bold tracking-[-0.02em] text-[#0F1C33]">
-            Pragma<span className="text-[#4A5BF0]">Box</span>
-          </span>
+          {/* Та же анимация, что на первом экране онбординга */}
+          <LottiePlayer load={loadPragmaboxAnimation} className="h-36 w-36" />
           <span className="flex gap-1.5" aria-hidden="true">
             {[0, 1, 2].map((i) => (
               <span
