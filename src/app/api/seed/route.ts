@@ -110,7 +110,7 @@ export function POST(req: Request) {
       .where(eq(clients.trainerId, trainer.id));
     if (existing > 0) return Response.json({ seeded: false });
 
-    const ids = new Map<string, { clientId: number; packageId: number | null }>();
+    const ids = new Map<string, { clientId: number; packageId: number | null; packagePaid: boolean }>();
     for (const d of DEMO_CLIENTS) {
       const [client] = await db
         .insert(clients)
@@ -118,6 +118,7 @@ export function POST(req: Request) {
         .returning({ id: clients.id });
 
       let packageId: number | null = null;
+      let packagePaid = false;
       if (d.pkg) {
         const expires = new Date(now.getTime() + d.pkg.expDays * 86_400_000)
           .toISOString()
@@ -136,8 +137,9 @@ export function POST(req: Request) {
           })
           .returning({ id: packages.id });
         packageId = pkg.id;
+        packagePaid = d.pkg.paid;
       }
-      ids.set(d.name, { clientId: client.id, packageId });
+      ids.set(d.name, { clientId: client.id, packageId, packagePaid });
     }
 
     const rows: (typeof sessions.$inferInsert)[] = [];
@@ -157,7 +159,8 @@ export function POST(req: Request) {
         kind: t.kind,
         status: t.status ?? (ended ? "done" : "planned"),
         price: t.price,
-        paid: t.paid,
+        // Занятие по абонементу оплачено вместе с абонементом
+        paid: info.packageId ? info.packagePaid : t.paid,
       });
     }
 
@@ -177,7 +180,7 @@ export function POST(req: Request) {
           kind: "individual",
           status: "done",
           price: 1200,
-          paid: h.name === "Михаил" ? i % 2 === 0 : true,
+          paid: info.packageId ? info.packagePaid : true,
         });
       }
     }

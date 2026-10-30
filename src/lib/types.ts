@@ -9,6 +9,7 @@ export interface PackageDTO {
   price: number;
   paid: boolean;
   expiresAt: string | null;
+  createdAt: string;
 }
 
 export interface ClientDTO {
@@ -37,6 +38,7 @@ export interface SessionDTO {
   id: number;
   clientId: number;
   clientName: string;
+  // Занятие по абонементу: списывается с него, а оплата — это оплата абонемента
   packageId: number | null;
   remainingSessions: number | null;
   startsAt: string;
@@ -45,6 +47,7 @@ export interface SessionDTO {
   kind: string;
   status: string;
   price: number;
+  // Деньги за тренировку получены. У занятия по абонементу — оплачен ли абонемент
   paid: boolean;
   note: string | null;
 }

@@ -39,14 +39,14 @@ export function POST(req: Request) {
     if (!body) return badRequest("Пустой запрос");
 
     const startsAt = parseDate(body.startsAt);
-    if (!startsAt) return badRequest("Укажи время начала");
+    if (!startsAt) return badRequest("Укажите время начала");
 
     let clientId = toInt(body.clientId, 0);
     if (clientId) {
       if (!(await ownsClient(trainer.id, clientId))) return badRequest("Клиент не найден");
     } else {
       const name = toText(body.newClientName);
-      if (!name) return badRequest("Выбери клиента или введи имя нового");
+      if (!name) return badRequest("Выберите клиента или введите имя нового");
       const limit = clientLimitForTier(trainer.subscriptionTier);
       if (limit !== null && (await countTrainerClients(trainer.id)) >= limit) {
         return clientLimitResponse(limit);
@@ -58,13 +58,17 @@ export function POST(req: Request) {
       clientId = created.id;
     }
 
-    // Если абонемент не выбран явно, списываем с последнего активного
-    const [activePkg] = await db
-      .select({ id: packages.id })
-      .from(packages)
-      .where(and(eq(packages.clientId, clientId), gt(packages.remainingSessions, 0)))
-      .orderBy(desc(packages.id))
-      .limit(1);
+    // По абонементу (по умолчанию) — занятие спишется с последнего абонемента, где они остались.
+    // usePackage: false — разовая тренировка со своей оплатой, абонемент не трогаем.
+    const [activePkg] =
+      body.usePackage === false
+        ? []
+        : await db
+            .select({ id: packages.id })
+            .from(packages)
+            .where(and(eq(packages.clientId, clientId), gt(packages.remainingSessions, 0)))
+            .orderBy(desc(packages.id))
+            .limit(1);
 
     const [row] = await db
       .insert(sessions)

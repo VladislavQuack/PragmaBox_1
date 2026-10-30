@@ -55,6 +55,8 @@ export default function SessionForm({
   const [paid, setPaid] = useState(editing?.paid ?? false);
   const [note, setNote] = useState(editing?.note ?? "");
   const [saving, setSaving] = useState(false);
+  // Занятие по абонементу: его оплата — это оплата абонемента, отдельной галочки нет
+  const byPackage = editing !== undefined && editing.packageId !== null;
 
   const chooseClient = (value: string) => {
     setClientId(value);
@@ -74,8 +76,8 @@ export default function SessionForm({
     : [];
 
   const submit = async () => {
-    if (!validStart) return onToast("Проверь дату и время");
-    if (clientId === "new" && !newName.trim()) return onToast("Введи имя клиента");
+    if (!validStart) return onToast("Проверьте дату и время");
+    if (clientId === "new" && !newName.trim()) return onToast("Введите имя клиента");
 
     const body: Record<string, unknown> = {
       startsAt: new Date(startTs).toISOString(),
@@ -83,9 +85,9 @@ export default function SessionForm({
       muscleGroup: muscle,
       kind,
       price: Number(price) || 0,
-      paid,
       note: note.trim(),
     };
+    if (!byPackage) body.paid = paid;
 
     setSaving(true);
     try {
@@ -180,13 +182,19 @@ export default function SessionForm({
       </Field>
 
       <div className="grid grid-cols-2 items-end gap-3">
-        <Field label="Стоимость, ₽">
+        <Field label={byPackage ? "Доля абонемента, ₽" : "Стоимость, ₽"}>
           <input type="number" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} className={input} />
         </Field>
-        <label className="flex items-center gap-2 pb-2.5 text-sm font-medium text-[#5C6B86]">
-          <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} className="h-4 w-4 accent-[#4A5BF0]" />
-          Оплачено
-        </label>
+        {byPackage ? (
+          <p className="pb-2.5 text-sm font-medium text-[#5C6B86]">
+            По абонементу · {editing?.paid ? "оплачен" : "не оплачен"}
+          </p>
+        ) : (
+          <label className="flex items-center gap-2 pb-2.5 text-sm font-medium text-[#5C6B86]">
+            <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} className="h-4 w-4 accent-[#4A5BF0]" />
+            Оплачено
+          </label>
+        )}
       </div>
 
       <Field label="Заметка">

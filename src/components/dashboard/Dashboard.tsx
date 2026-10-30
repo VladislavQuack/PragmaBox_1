@@ -81,6 +81,8 @@ export default function DayTab({
   const workEnd = atMinute(day, WORK_END_HOUR * 60);
   const monthIncome = incomeSummary(history, startOfMonth(now), now).earned;
   const monthlyGoal = data.me?.monthlyGoal ?? 30000;
+  // Цена разовой тренировки по умолчанию — из онбординга или профиля
+  const defaultPrice = data.me?.avgSessionPrice ?? 1500;
   const nextGap = isToday ? nextWindow(daySessions, now, workEnd) : null;
   const reminders: Reminder[] = buildReminders(history, clients, now);
   const actionSession = [...daySessions, ...history].find((s) => s.id === actionId) ?? null;
@@ -153,6 +155,20 @@ export default function DayTab({
     }
   };
 
+  const markPackagePaid = async (packageId: number) => {
+    data.optimisticUpdatePackage(packageId, { paid: true });
+    onToast("Абонемент оплачен");
+    haptic("success");
+
+    try {
+      await patch(`/api/packages/${packageId}`, { paid: true });
+    } catch (e) {
+      onToast(errText(e));
+    }
+    // Занятия из абонемента тоже стали оплаченными — берём свежие данные
+    reload();
+  };
+
   const followReminder = (r: Reminder) => {
     setPanel(null);
     onReminderNavigate(r);
@@ -166,7 +182,7 @@ export default function DayTab({
         <div className="glass-card shrink-0 rounded-[28px] p-5 text-center">
           <p className="font-semibold text-[#0F1C33]">Пока пусто</p>
           <p className="mt-1 text-sm text-[#5C6B86]">
-            Добавь клиента кнопкой «+» или загрузи демо-данные, чтобы увидеть дашборд в деле.
+            Добавьте клиента кнопкой «+» или загрузите демо-данные, чтобы увидеть дашборд в деле.
           </p>
           <button
             type="button"
@@ -228,6 +244,7 @@ export default function DayTab({
                 viewDay={day}
                 viewSessions={daySessions}
                 now={now}
+                defaultPrice={defaultPrice}
                 initialStart={wizard.initialStart}
                 origin={wizard.origin}
                 onDone={finishWizard}
@@ -273,6 +290,7 @@ export default function DayTab({
                     viewDay={day}
                     viewSessions={daySessions}
                     now={now}
+                    defaultPrice={defaultPrice}
                     initialStart={mapWizard.initialStart}
                     origin={mapWizard.origin}
                     onDone={finishWizard}
@@ -287,7 +305,13 @@ export default function DayTab({
       </Sheet>
 
       <Sheet open={panel === "income"} onClose={() => setPanel(null)} title="Доходы" full>
-        <IncomeExpanded history={history} now={now} onPay={(id) => void markPaid(id)} />
+        <IncomeExpanded
+          history={history}
+          clients={clients}
+          now={now}
+          onPay={(id) => void markPaid(id)}
+          onPayPackage={(id) => void markPackagePaid(id)}
+        />
       </Sheet>
 
       <Sheet open={panel === "next"} onClose={() => setPanel(null)} title="Окна и перерывы">

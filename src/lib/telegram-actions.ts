@@ -50,6 +50,36 @@ export function downloadFile(url: string, fileName: string, onResult?: (result: 
   onResult?.("browser");
 }
 
+// Подтверждение действия. В Telegram — его родное окно (кнопка удаления красная),
+// в обычном браузере — стандартный confirm().
+export function confirmAction(
+  message: string,
+  { title, okText = "OK", destructive = false }: { title?: string; okText?: string; destructive?: boolean } = {},
+): Promise<boolean> {
+  const tg = telegramWebApp();
+  if (tg?.showPopup && atLeast(tg, "6.2")) {
+    return new Promise((resolve) => {
+      try {
+        tg.showPopup!(
+          {
+            title: title?.slice(0, 64),
+            message: message.slice(0, 256),
+            buttons: [
+              { id: "cancel", type: "cancel" },
+              { id: "ok", type: destructive ? "destructive" : "default", text: okText.slice(0, 64) },
+            ],
+          },
+          (id) => resolve(id === "ok"),
+        );
+      } catch {
+        // Окно уже открыто или клиент не умеет — действие не выполняем
+        resolve(false);
+      }
+    });
+  }
+  return Promise.resolve(window.confirm(title ? `${title}\n\n${message}` : message));
+}
+
 // Ссылки t.me (окно «Поделиться», чат с ботом) внутри Telegram открываем родным способом.
 export function openTelegramLink(url: string) {
   const tg = telegramWebApp();

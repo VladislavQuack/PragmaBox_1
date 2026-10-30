@@ -15,11 +15,14 @@ export function DonutChart({
   centerTop,
   centerBottom,
   size = 168,
+  formatValue,
 }: {
   slices: Slice[];
   centerTop: string;
   centerBottom: string;
   size?: number;
+  // Подпись суммы под названием доли (например, в рублях)
+  formatValue?: (value: number) => string;
 }) {
   const total = slices.reduce((acc, s) => acc + s.value, 0);
   const r = size / 2 - 14;
@@ -68,13 +71,20 @@ export function DonutChart({
         </text>
       </svg>
 
-      <ul className="min-w-0 flex-1 space-y-2">
+      <ul className="min-w-0 flex-1 space-y-2.5">
         {slices.map((s) => {
           const pct = total > 0 ? Math.round((s.value / total) * 100) : 0;
           return (
-            <li key={s.label} className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-              <span className="min-w-0 flex-1 truncate text-xs text-[#5C6B86]">{s.label}</span>
+            <li key={s.label} className="flex items-start gap-2">
+              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs leading-tight text-[#5C6B86]">{s.label}</span>
+                {formatValue && (
+                  <span className="mt-0.5 block text-[12px] font-semibold tabular-nums text-[#0F1C33]">
+                    {formatValue(s.value)}
+                  </span>
+                )}
+              </span>
               <span className="shrink-0 text-xs font-bold tabular-nums text-[#0F1C33]">{pct}%</span>
             </li>
           );

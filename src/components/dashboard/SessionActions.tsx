@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { del, patch } from "@/lib/client-api";
+import { confirmAction } from "@/lib/telegram-actions";
 import { KINDS, MUSCLE_GROUPS, isKindKey, isMuscleKey } from "@/lib/config";
 import { fmtDuration, fmtMinute, fmtMoney, minuteOfDay } from "@/lib/time";
 import type { SessionDTO } from "@/lib/types";
@@ -39,6 +40,8 @@ export default function SessionActions({
   const muscle = isMuscleKey(s.muscleGroup) ? MUSCLE_GROUPS[s.muscleGroup].label : "—";
   const kind = isKindKey(s.kind) ? KINDS[s.kind] : "—";
 
+  const byPackage = s.packageId !== null;
+
   const run = async (body: Record<string, unknown>, msg: string) => {
     // Мгновенное обновление в памяти
     if (onOptimisticUpdate) {
@@ -49,14 +52,42 @@ export default function SessionActions({
 
     try {
       await patch(`/api/sessions/${s.id}`, body);
+      // Проведение списывает занятие с абонемента (а отмена возвращает) — обновляем остаток
+      if (byPackage && typeof body.status === "string" && (body.status === "done" || s.status === "done")) onChanged();
     } catch (e) {
       onToast(e instanceof Error ? e.message : "Ошибка сохранения");
       onChanged();
     }
   };
 
+  // У занятия по абонементу оплата — это оплата абонемента целиком
+  const togglePackagePaid = async () => {
+    if (s.packageId === null) return;
+    if (s.paid) {
+      const ok = await confirmAction("Абонемент снова попадёт в долги клиента.", {
+        title: "Снять оплату абонемента?",
+        okText: "Снять оплату",
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    setBusy(true);
+    try {
+      await patch(`/api/packages/${s.packageId}`, { paid: !s.paid });
+      onToast(s.paid ? "Оплата абонемента снята" : "Абонемент оплачен");
+      onChanged();
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : "Ошибка сохранения");
+      setBusy(false);
+    }
+  };
+
   const remove = async () => {
-    if (!window.confirm("Удалить тренировку?")) return;
+    const ok = await confirmAction(
+      byPackage && s.status === "done" ? "Занятие вернётся в абонемент клиента." : "Отменить удаление будет нельзя.",
+      { title: "Удалить тренировку?", okText: "Удалить", destructive: true },
+    );
+    if (!ok) return;
     if (onOptimisticDelete) {
       onOptimisticDelete(s.id);
     }
@@ -79,7 +110,10 @@ export default function SessionActions({
         </p>
         <p className="mt-1 text-xl font-semibold text-[#0F1C33]">{s.clientName}</p>
         <p className="mt-1 text-sm text-[#5C6B86]">
-          {muscle} · {kind} · {fmtMoney(s.price)} · {s.paid ? "оплачено" : "не оплачено"}
+          {muscle} · {kind} ·{" "}
+          {byPackage
+            ? `по абонементу · ${s.paid ? "абонемент оплачен" : "абонемент не оплачен"}`
+            : `${fmtMoney(s.price)} · ${s.paid ? "оплачено" : "не оплачено"}`}
         </p>
         {s.remainingSessions !== null && (
           <p className="mt-2 inline-block rounded-full bg-[#F1F3F9] px-2.5 py-1 text-xs font-medium text-[#5C6B86]">
@@ -89,12 +123,22 @@ export default function SessionActions({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <ActionButton tone="ok" disabled={busy} onClick={() => run({ status: "done" }, "Проведено, занятие списано")}>
+        <ActionButton
+          tone="ok"
+          disabled={busy}
+          onClick={() => run({ status: "done" }, byPackage ? "Проведено, занятие списано" : "Тренировка проведена")}
+        >
           ✅ Провести
         </ActionButton>
-        <ActionButton tone="info" disabled={busy} onClick={() => run({ paid: !s.paid }, s.paid ? "Оплата снята" : "Оплата отмечена")}>
-          💳 {s.paid ? "Снять оплату" : "Оплачено"}
-        </ActionButton>
+        {byPackage ? (
+          <ActionButton tone="info" disabled={busy} onClick={togglePackagePaid}>
+            💳 {s.paid ? "Снять оплату абонемента" : "Абонемент оплачен"}
+          </ActionButton>
+        ) : (
+          <ActionButton tone="info" disabled={busy} onClick={() => run({ paid: !s.paid }, s.paid ? "Оплата снята" : "Оплата отмечена")}>
+            💳 {s.paid ? "Снять оплату" : "Оплачено"}
+          </ActionButton>
+        )}
         <ActionButton tone="muted" disabled={busy} onClick={() => run({ status: "cancelled_client" }, "Отмена клиентом")}>
           ↩️ Отменил клиент
         </ActionButton>

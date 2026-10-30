@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { api, post } from "@/lib/client-api";
 import { dayGaps, isActive, startMs } from "@/lib/analytics";
+import { activePackage, perSessionPrice } from "@/lib/packages";
 import {
   KINDS,
   MUSCLE_GROUPS,
@@ -82,6 +83,8 @@ interface TimelineCreatorProps {
   viewDay: Date;
   viewSessions: SessionDTO[];
   now: Date;
+  // Обычная цена тренировки из профиля (её спрашивают в онбординге)
+  defaultPrice: number;
   initialStart?: Date;
   origin?: CreatorOrigin;
   onDone: (msg: string, session: SessionDTO | null) => void;
@@ -103,6 +106,7 @@ export default function TimelineCreator({
   viewDay,
   viewSessions,
   now,
+  defaultPrice,
   initialStart,
   origin = { x: "92%", y: "96%" },
   onDone,
@@ -128,9 +132,11 @@ export default function TimelineCreator({
   const [durationSet, setDurationSet] = useState(false);
   const [muscle, setMuscle] = useState<MuscleKey | null>(null);
   const [kind, setKind] = useState<KindKey | null>(null);
-  const [price, setPrice] = useState(1200);
+  // Цена разовой тренировки. У занятия по абонементу цена — доля абонемента
+  const [price, setPrice] = useState(defaultPrice);
   const [priceTouched, setPriceTouched] = useState(false);
   const [paid, setPaid] = useState<boolean | null>(null);
+  const [byPackage, setByPackage] = useState(false);
   const [fetched, setFetched] = useState<{ key: string; list: SessionDTO[] } | null>(null);
 
   const viewKey = dayKey(viewDay);
@@ -166,12 +172,10 @@ export default function TimelineCreator({
   }, []);
 
   const client = clients.find((c) => c.id === clientId) ?? null;
-  const activePkg = (c: ClientDTO | null) => c?.packages.filter((p) => p.remainingSessions > 0).at(-1) ?? null;
-  const pkg = newMode ? null : activePkg(client);
-  const perSessionOf = (c: ClientDTO | null) => {
-    const p = activePkg(c);
-    return p && p.price > 0 ? Math.round(p.price / p.totalSessions) : 1200;
-  };
+  const pkg = newMode ? null : activePackage(client);
+  const usePkg = byPackage && pkg !== null;
+  const finalPrice = usePkg ? perSessionPrice(pkg) : price;
+  const finalPaid = usePkg ? pkg.paid : (paid ?? price === 0);
   const clientName = newMode ? newName.trim() : (client?.name ?? "");
   const lastSession = useMemo(() => {
     if (!clientId) return undefined;
@@ -213,18 +217,28 @@ export default function TimelineCreator({
 
   // ───────── Выборы ─────────
   const pickClient = (c: ClientDTO) => {
+    if (c.id !== clientId) {
+      // У другого клиента может не быть абонемента — способ оплаты выбираем заново
+      setByPackage(false);
+      setPaid(null);
+    }
     setClientId(c.id);
     setNewMode(false);
-    if (!priceTouched) setPrice(perSessionOf(c));
     next();
   };
   const pickKind = (k: KindKey) => {
     setKind(k);
-    if (!priceTouched) setPrice(k === "trial" ? 0 : perSessionOf(newMode ? null : client));
+    if (!priceTouched) setPrice(k === "trial" ? 0 : defaultPrice);
     next();
   };
   const pickPaid = (value: boolean) => {
+    setByPackage(false);
     setPaid(value);
+    next();
+  };
+  const pickPackage = () => {
+    setByPackage(true);
+    setPaid(pkg?.paid ?? true);
     next();
   };
 
@@ -238,13 +252,15 @@ export default function TimelineCreator({
         durationMin: duration,
         muscleGroup: muscle ?? "full",
         kind: kind ?? "individual",
-        price,
-        paid: paid ?? price === 0,
+        price: finalPrice,
+        paid: finalPaid,
+        // Разовая тренировка не списывает занятие с абонемента
+        usePackage: usePkg,
         ...(newMode ? { newClientName: clientName } : { clientId }),
       };
       const res = await post<{ session: SessionDTO }>("/api/sessions", body);
       haptic("success");
-      close(() => onDone("Тренировка записана 💪", res.session));
+      close(() => onDone("Тренировка записана", res.session));
     } catch (e) {
       haptic("warn");
       onToast(e instanceof Error ? e.message : "Не удалось сохранить");
@@ -261,7 +277,12 @@ export default function TimelineCreator({
   if (durationSet || stepPassed("duration")) crumbs.push({ id: "duration", text: fmtDuration(duration) });
   if (muscle) crumbs.push({ id: "muscle", text: MUSCLE_GROUPS[muscle].label });
   if (kind) crumbs.push({ id: "kind", text: KINDS[kind] });
-  if (paid !== null) crumbs.push({ id: "pay", text: price === 0 ? "Бесплатно" : `${fmtMoney(price)}${paid ? " ✓" : ""}` });
+  if (paid !== null) {
+    crumbs.push({
+      id: "pay",
+      text: usePkg ? "По абонементу" : price === 0 ? "Бесплатно" : `${fmtMoney(price)} · ${paid ? "оплачено" : "позже"}`,
+    });
+  }
 
   const current = STEPS[step];
   const visibleSteps = STEPS.filter((s) => !prefilled.has(s.id));
@@ -343,13 +364,12 @@ export default function TimelineCreator({
               selectedId={clientId}
               newMode={newMode}
               newName={newName}
-              activePkg={activePkg}
               onPick={pickClient}
               onNewMode={setNewMode}
               onNewName={setNewName}
               onNext={() => {
                 setClientId(null);
-                if (!priceTouched) setPrice(1200);
+                setByPackage(false);
                 next();
               }}
             />
@@ -470,13 +490,16 @@ export default function TimelineCreator({
           {current.id === "pay" && (
             <PayStep
               price={price}
-              perSession={perSessionOf(newMode ? null : client)}
+              defaultPrice={defaultPrice}
               pkg={pkg}
+              byPackage={usePkg}
+              chosen={paid !== null}
               onPrice={(v) => {
                 setPrice(Math.max(0, v));
                 setPriceTouched(true);
               }}
               onPaid={pickPaid}
+              onPackage={pickPackage}
             />
           )}
 
@@ -489,8 +512,9 @@ export default function TimelineCreator({
               duration={duration}
               muscle={muscle}
               kind={kind}
-              price={price}
-              paid={paid ?? price === 0}
+              price={finalPrice}
+              paid={finalPaid}
+              byPackage={usePkg}
               pkgLeft={pkg?.remainingSessions ?? null}
               conflicts={minute !== null ? conflictsAt(minute, duration) : []}
               saving={saving}
@@ -574,7 +598,6 @@ function ClientStep({
   selectedId,
   newMode,
   newName,
-  activePkg,
   onPick,
   onNewMode,
   onNewName,
@@ -584,7 +607,6 @@ function ClientStep({
   selectedId: number | null;
   newMode: boolean;
   newName: string;
-  activePkg: (c: ClientDTO | null) => ClientDTO["packages"][number] | null;
   onPick: (c: ClientDTO) => void;
   onNewMode: (v: boolean) => void;
   onNewName: (v: string) => void;
@@ -624,7 +646,7 @@ function ClientStep({
   return (
     <ChipGrid cols={2}>
       {clients.map((c, i) => {
-        const p = activePkg(c);
+        const p = activePackage(c);
         return (
           <Chip key={c.id} i={i} selected={selectedId === c.id} onClick={() => onPick(c)}>
             <span className="flex items-center gap-2.5 text-left">
@@ -637,7 +659,7 @@ function ClientStep({
               <span className="min-w-0">
                 <span className="block truncate text-sm font-bold">{c.name}</span>
                 <span className={`block truncate text-[11px] ${p && p.remainingSessions <= 1 ? "font-semibold text-amber-600" : "text-[#5C6B86]"}`}>
-                  {p ? `осталось ${p.remainingSessions} из ${p.totalSessions}` : "без абонемента"}
+                  {p ? `осталось ${p.remainingSessions} из ${p.totalSessions}` : "разовые"}
                 </span>
               </span>
             </span>
@@ -826,23 +848,53 @@ function TimeStep({
 // ───────── Шаг 7: оплата ─────────
 function PayStep({
   price,
-  perSession,
+  defaultPrice,
   pkg,
+  byPackage,
+  chosen,
   onPrice,
   onPaid,
+  onPackage,
 }: {
   price: number;
-  perSession: number;
+  defaultPrice: number;
   pkg: ClientDTO["packages"][number] | null;
+  byPackage: boolean;
+  // Способ оплаты уже выбирали (вернулись к шагу) — подсвечиваем его
+  chosen: boolean;
   onPrice: (v: number) => void;
   onPaid: (v: boolean) => void;
+  onPackage: () => void;
 }) {
-  const quick = Array.from(new Set([perSession, 0, 1000, 1200, 1500, 2000])).slice(0, 6);
+  const quick = Array.from(new Set([defaultPrice, 0, 1000, 1500, 2000, 2500, 3000])).slice(0, 6);
   return (
     <div className="space-y-3">
+      {pkg && (
+        <>
+          <Chip i={0} selected={chosen && byPackage} onClick={onPackage}>
+            <span className="flex items-center gap-3 text-left">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#EEF1FF] text-xl">🎟</span>
+              <span className="min-w-0">
+                <span className="block text-base font-bold">По абонементу</span>
+                <span className="block text-xs text-[#5C6B86]">
+                  спишется 1 занятие · осталось {pkg.remainingSessions} из {pkg.totalSessions}
+                </span>
+                {!pkg.paid && pkg.price > 0 && (
+                  <span className="block text-xs font-semibold text-[#B4232E]">абонемент ещё не оплачен</span>
+                )}
+              </span>
+            </span>
+          </Chip>
+          <p className="pt-1 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9AA6BE]">
+            или разовая тренировка
+          </p>
+        </>
+      )}
+
       <div className="chip-pop flex items-center justify-between rounded-3xl bg-white/90 p-3 shadow-sm">
         <button
           type="button"
+          aria-label="Дешевле на 100 ₽"
           onClick={() => onPrice(price - 100)}
           className="grid h-12 w-12 place-items-center rounded-2xl bg-[#F1F3F9] text-2xl font-bold text-[#5C6B86] active:scale-90"
         >
@@ -851,6 +903,7 @@ function PayStep({
         <p className="text-3xl font-bold tabular-nums text-[#0F1C33]">{price === 0 ? "Бесплатно" : fmtMoney(price)}</p>
         <button
           type="button"
+          aria-label="Дороже на 100 ₽"
           onClick={() => onPrice(price + 100)}
           className="grid h-12 w-12 place-items-center rounded-2xl bg-[#F1F3F9] text-2xl font-bold text-[#5C6B86] active:scale-90"
         >
@@ -868,8 +921,7 @@ function PayStep({
               price === v ? "bg-[#4A5BF0] text-white" : "bg-white/90 text-[#5C6B86]"
             }`}
           >
-            {v === 0 ? "0 ₽" : fmtMoney(v)}
-            {pkg && v === perSession ? " · абонемент" : ""}
+            {v === 0 ? "Бесплатно" : fmtMoney(v)}
           </button>
         ))}
       </div>
@@ -881,21 +933,10 @@ function PayStep({
           </Chip>
         ) : (
           <>
-            {pkg && pkg.paid && (
-              <Chip i={1} onClick={() => onPaid(true)}>
-                <span className="flex items-center gap-3 text-left">
-                  <span className="text-2xl">🎟</span>
-                  <span>
-                    <span className="block text-sm font-bold">По абонементу</span>
-                    <span className="block text-xs text-[#5C6B86]">осталось {pkg.remainingSessions} из {pkg.totalSessions}</span>
-                  </span>
-                </span>
-              </Chip>
-            )}
             <Chip i={2} onClick={() => onPaid(true)}>
               <span className="flex items-center gap-3 text-left">
                 <span className="text-2xl">💳</span>
-                <span className="text-sm font-bold">Уже оплатил</span>
+                <span className="text-sm font-bold">Уже оплачено</span>
               </span>
             </Chip>
             <Chip i={3} onClick={() => onPaid(false)}>
@@ -922,6 +963,7 @@ function ReviewStep({
   kind,
   price,
   paid,
+  byPackage,
   pkgLeft,
   conflicts,
   saving,
@@ -937,6 +979,7 @@ function ReviewStep({
   kind: KindKey | null;
   price: number;
   paid: boolean;
+  byPackage: boolean;
   pkgLeft: number | null;
   conflicts: SessionDTO[];
   saving: boolean;
@@ -950,7 +993,15 @@ function ReviewStep({
     { id: "duration", label: "Длительность", value: fmtDuration(duration) },
     { id: "muscle", label: "Мышцы", value: m.label },
     { id: "kind", label: "Формат", value: kind ? KINDS[kind] : KINDS.individual },
-    { id: "pay", label: "Оплата", value: price === 0 ? "Бесплатно" : `${fmtMoney(price)} · ${paid ? "оплачено" : "позже"}` },
+    {
+      id: "pay",
+      label: "Оплата",
+      value: byPackage
+        ? `По абонементу${paid ? "" : " · не оплачен"}`
+        : price === 0
+          ? "Бесплатно"
+          : `${fmtMoney(price)} · ${paid ? "оплачено" : "позже"}`,
+    },
   ];
   return (
     <div className="space-y-3">
@@ -960,7 +1011,7 @@ function ReviewStep({
           <button type="button" onClick={() => onJump("client")} className="min-w-0 text-left">
             <p className="truncate text-xl font-bold text-[#0F1C33]">{clientName}</p>
             <p className="text-xs text-[#5C6B86]">
-              {isNew ? "новый клиент" : pkgLeft !== null ? `в абонементе осталось ${pkgLeft}` : "без абонемента"}
+              {isNew ? "новый клиент" : pkgLeft !== null ? `в абонементе осталось ${pkgLeft}` : "разовые тренировки"}
             </p>
           </button>
         </div>

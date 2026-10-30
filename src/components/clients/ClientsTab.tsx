@@ -3,12 +3,16 @@
 import { useMemo, useState } from "react";
 import { ApiError, post } from "@/lib/client-api";
 import { clientLimitForTier } from "@/lib/subscription";
-import { startMs } from "@/lib/analytics";
+import { debtSummary, startMs } from "@/lib/analytics";
 import { buildSeries, latestWithDelta, metricDef } from "@/lib/metrics";
-import { addDays, dayKey, fmtShortDate } from "@/lib/time";
+import { currentPackage } from "@/lib/packages";
+import { fmtShortDate } from "@/lib/time";
 import type { ClientDTO, MeasurementDTO, SessionDTO } from "@/lib/types";
 import { IconPlus, IconSearch } from "@/components/ui/icons";
 import { Sparkline } from "@/components/charts/Charts";
+import { haptic } from "@/components/dashboard/TimelineCreator";
+import { fieldInput } from "./ClientForm";
+import { PackageFields, draftPrice, newPackageDraft, validateDraft, type PackageDraft } from "./PackageForm";
 
 export const initials = (name: string) =>
   name
@@ -20,9 +24,6 @@ export const initials = (name: string) =>
 
 export const avatarColor = (_id: number) => "#4A5BF0";
 
-const input =
-  "w-full rounded-xl border border-[#E0E5F1] bg-white px-3 py-2.5 text-sm text-[#0F1C33] outline-none focus:border-[#4A5BF0]";
-
 export default function ClientsTab({
   clients,
   history,
@@ -32,12 +33,15 @@ export default function ClientsTab({
   onReload,
   onToast,
   subscriptionTier,
+  defaultPrice,
   onOpenBeta,
 }: {
   clients: ClientDTO[];
   history: SessionDTO[];
   measurements: MeasurementDTO[];
   now: Date;
+  // Обычная цена тренировки из профиля — от неё считается цена абонемента
+  defaultPrice: number;
   onOpen: (id: number) => void;
   onReload: () => void;
   onToast: (msg: string) => void;
@@ -51,19 +55,17 @@ export default function ClientsTab({
   // В бете лимита нет — баннер о лимите не появится
   const clientLimit = clientLimitForTier(subscriptionTier);
   const freeAtLimit = clientLimit !== null && clients.length >= clientLimit;
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    total: "8",
-    price: "9600",
-    paid: true,
-    expiresAt: dayKey(addDays(now, 30)),
-  });
+  const [form, setForm] = useState({ name: "", phone: "" });
+  // Абонемент при создании — по желанию: многие клиенты платят за каждую тренировку
+  const [withPackage, setWithPackage] = useState(false);
+  const [draft, setDraft] = useState<PackageDraft>(() => newPackageDraft({ today: now, perSession: defaultPrice }));
+
+  const debts = useMemo(() => debtSummary(history, clients), [history, clients]);
 
   const rows = useMemo(() => {
     const todayTs = now.getTime();
     return clients.map((c) => {
-      const pkg = c.packages[c.packages.length - 1] ?? null;
+      const pkg = currentPackage(c);
       const mine = history.filter((s) => s.clientId === c.id);
       const next = mine
         .filter((s) => s.status === "planned" && startMs(s) >= todayTs)
@@ -71,21 +73,18 @@ export default function ClientsTab({
       const last = mine
         .filter((s) => s.status === "done")
         .sort((a, b) => startMs(b) - startMs(a))[0];
-      const debt = mine
-        .filter((s) => s.status === "done" && !s.paid && s.price > 0)
-        .reduce((acc, s) => acc + s.price, 0);
       const ms = measurements.filter((m) => m.clientId === c.id);
       return {
         client: c,
         pkg,
         next,
         last,
-        debt: debt + (pkg && !pkg.paid && pkg.remainingSessions > 0 ? pkg.price : 0),
+        debt: debts.byClient.get(c.id)?.total ?? 0,
         weight: latestWithDelta(ms, "weight"),
         spark: buildSeries(ms, "weight", "weeks", 10),
       };
     });
-  }, [clients, history, measurements, now]);
+  }, [clients, history, measurements, now, debts]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -99,23 +98,35 @@ export default function ClientsTab({
     return [...base].sort((a, b) => a.client.name.localeCompare(b.client.name, "ru"));
   }, [rows, query]);
 
+  const openForm = () => {
+    setForm({ name: "", phone: "" });
+    setWithPackage(false);
+    setDraft(newPackageDraft({ today: now, perSession: defaultPrice }));
+    setAdding(true);
+  };
+
   const createClient = async () => {
-    if (!form.name.trim()) return onToast("Введи имя клиента");
+    if (!form.name.trim()) return onToast("Введите имя клиента");
+    if (withPackage) {
+      const error = validateDraft(draft);
+      if (error) return onToast(error);
+    }
     setBusy(true);
     try {
       await post("/api/clients", {
         name: form.name,
         phone: form.phone,
-        package: {
-          title: `Абонемент ${form.total} занятий`,
-          totalSessions: Number(form.total),
-          price: Number(form.price),
-          paid: form.paid,
-          expiresAt: form.expiresAt || null,
-        },
+        package: withPackage
+          ? {
+              totalSessions: draft.total,
+              price: draftPrice(draft),
+              paid: draft.paid,
+              expiresAt: draft.expiresAt || null,
+            }
+          : null,
       });
+      haptic("success");
       setAdding(false);
-      setForm({ ...form, name: "", phone: "" });
       onToast("Клиент добавлен");
       onReload();
     } catch (e) {
@@ -152,7 +163,8 @@ export default function ClientsTab({
               setLimitPrompt(true);
               return;
             }
-            setAdding((v) => !v);
+            if (adding) setAdding(false);
+            else openForm();
           }}
           aria-label="Новый клиент"
           className="grid h-11 w-11 shrink-0 place-items-center rounded-[15px] bg-[#4A5BF0] text-white transition active:scale-90"
@@ -163,50 +175,64 @@ export default function ClientsTab({
       </div>
 
       {adding && (
-        <div className="space-y-2.5 rounded-[22px] border border-[#E6EAF3] bg-white p-4">
-          <p className="text-sm font-bold text-[#0F1C33]">Новый клиент</p>
+        <div className="space-y-3 rounded-[22px] border border-[#E6EAF3] bg-white p-4">
+          <p className="text-[15px] font-bold text-[#0F1C33]">Новый клиент</p>
           <input
             autoFocus
             placeholder="Имя"
             value={form.name}
+            maxLength={80}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className={input}
+            className={fieldInput}
           />
           <input
-            placeholder="Телефон"
+            type="tel"
+            inputMode="tel"
+            placeholder="Телефон (необязательно)"
             value={form.phone}
+            maxLength={40}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            className={input}
+            className={fieldInput}
           />
-          <div className="grid grid-cols-2 gap-2">
-            <label className="space-y-1 text-xs text-[#5C6B86]">
-              Занятий
-              <input
-                type="number"
-                value={form.total}
-                onChange={(e) => setForm({ ...form, total: e.target.value })}
-                className={input}
-              />
-            </label>
-            <label className="space-y-1 text-xs text-[#5C6B86]">
-              Сумма, ₽
-              <input
-                type="number"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-                className={input}
-              />
-            </label>
+
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-[#5C6B86]">Как платит клиент</p>
+            <div className="grid grid-cols-2 gap-1.5 rounded-2xl bg-[#F1F3F9] p-1">
+              {[
+                { value: false, label: "За тренировку" },
+                { value: true, label: "Абонемент" },
+              ].map((o) => (
+                <button
+                  key={o.label}
+                  type="button"
+                  aria-pressed={withPackage === o.value}
+                  onClick={() => setWithPackage(o.value)}
+                  className={`rounded-xl px-2 py-2.5 text-[13px] font-bold leading-tight transition ${
+                    withPackage === o.value ? "bg-white text-[#0F1C33] shadow-sm" : "text-[#5C6B86]"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            {!withPackage && (
+              <p className="mt-1.5 text-[11px] leading-relaxed text-[#9AA6BE]">
+                Абонемент можно оформить позже в карточке клиента.
+              </p>
+            )}
           </div>
-          <label className="flex items-center gap-2 text-sm text-[#0F1C33]">
-            <input
-              type="checkbox"
-              checked={form.paid}
-              onChange={(e) => setForm({ ...form, paid: e.target.checked })}
-              className="h-4 w-4 accent-[#4A5BF0]"
-            />
-            Абонемент оплачен
-          </label>
+
+          {withPackage && (
+            <div className="rounded-2xl border border-[#EEF0F6] p-3">
+              <PackageFields
+                draft={draft}
+                onChange={setDraft}
+                today={now}
+                priceFor={(total) => total * defaultPrice}
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -221,7 +247,7 @@ export default function ClientsTab({
               onClick={createClient}
               className="rounded-xl bg-[#4A5BF0] py-2.5 text-sm font-bold text-white disabled:opacity-60"
             >
-              Сохранить
+              {busy ? "Сохраняем…" : "Добавить"}
             </button>
           </div>
         </div>
@@ -265,6 +291,7 @@ export default function ClientsTab({
         {filtered.map((r) => {
           const pkg = r.pkg;
           const low = pkg !== null && pkg.remainingSessions <= 1;
+          const ended = pkg !== null && pkg.remainingSessions <= 0;
           return (
             <li key={r.client.id}>
               <button
@@ -288,10 +315,10 @@ export default function ClientsTab({
                   <p className="mt-0.5 truncate text-[11px] text-[#9AA6BE]">
                     {pkg ? (
                       <span className={low ? "font-semibold text-[#FF9F0A]" : ""}>
-                        осталось {pkg.remainingSessions} из {pkg.totalSessions}
+                        {ended ? "абонемент закончился" : `осталось ${pkg.remainingSessions} из ${pkg.totalSessions}`}
                       </span>
                     ) : (
-                      "без абонемента"
+                      "разовые тренировки"
                     )}
                     {r.next
                       ? ` · след. ${fmtShortDate(new Date(r.next.startsAt))}`

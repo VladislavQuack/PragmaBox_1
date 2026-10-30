@@ -34,6 +34,16 @@ export interface TgWebApp {
   downloadFile?: (params: { url: string; file_name: string }, cb?: (accepted: boolean) => void) => void;
   openLink?: (url: string) => void;
   openTelegramLink?: (url: string) => void;
+  // Bot API 6.2+: родное окно с кнопками вместо системного confirm() браузера
+  showPopup?: (params: TgPopupParams, cb?: (buttonId: string) => void) => void;
+  // Bot API 6.1+: системная кнопка «Назад» в шапке Telegram (и аппаратная «Назад» на Android)
+  BackButton?: {
+    isVisible?: boolean;
+    show?: () => void;
+    hide?: () => void;
+    onClick?: (cb: () => void) => void;
+    offClick?: (cb: () => void) => void;
+  };
   onEvent?: (event: string, cb: (payload?: unknown) => void) => void;
   offEvent?: (event: string, cb: (payload?: unknown) => void) => void;
   setHeaderColor?: (color: string) => void;
@@ -42,6 +52,12 @@ export interface TgWebApp {
 }
 
 export type HomeScreenStatus = "unsupported" | "unknown" | "added" | "missed";
+
+export interface TgPopupParams {
+  title?: string;
+  message: string;
+  buttons?: { id?: string; type?: "default" | "ok" | "close" | "cancel" | "destructive"; text?: string }[];
+}
 
 // Нижний слой telegram-web-app.js: сырые события клиента. Нужен для событий,
 // которые WebApp наружу не пробрасывает (например, home_screen_failed).

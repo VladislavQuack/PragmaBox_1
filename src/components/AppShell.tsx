@@ -4,13 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getTelegramDiagnostics, waitForTelegram, post } from "@/lib/client-api";
 import { setupTelegramShell } from "@/lib/telegram-shell";
 import { useAppData } from "@/lib/use-app-data";
-import { addDays, dayKey, fmtDayLong, fmtMoney, fmtWeekday, parseDayKey } from "@/lib/time";
-import { sumPrice, type Reminder } from "@/lib/analytics";
+import { addDays, dayKey, fmtDayLong, fmtMoney, fmtWeekday, parseDayKey, startOfMonth } from "@/lib/time";
+import { debtSummary, incomeSummary, type Reminder } from "@/lib/analytics";
 import Sheet from "@/components/ui/Sheet";
 import { IconChevronDown } from "@/components/ui/icons";
 import BottomNav, { type Tab } from "@/components/BottomNav";
 import DayTab from "@/components/dashboard/Dashboard";
-import FinanceTab, { collectDebtors } from "@/components/finance/FinanceTab";
+import FinanceTab from "@/components/finance/FinanceTab";
 import ClientsTab from "@/components/clients/ClientsTab";
 import ClientDetail from "@/components/clients/ClientDetail";
 import SettingsPanel, { useWidgetPrefs } from "@/components/dashboard/SettingsPanel";
@@ -238,7 +238,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   };
 
   const debtCount = useMemo(
-    () => collectDebtors(data.history, data.clients).length,
+    () => debtSummary(data.history, data.clients).debtors.length,
     [data.history, data.clients],
   );
 
@@ -340,13 +340,19 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   const day = parseDayKey(activeKey);
   const isToday = activeKey === todayKey;
   const openClient = data.clients.find((c) => c.id === openClientId) ?? null;
-  const earnedMonth = sumPrice(data.history.filter((s) => s.status === "done"));
+  // Та же сумма, что в плитке «Заработано за месяц» ниже
+  const earnedMonth = incomeSummary(data.history, startOfMonth(now), now).earned;
+  const monthName = now.toLocaleDateString("ru-RU", { month: "long" });
   const me = data.me;
 
   // Шапка вкладок, кроме «Дня» (у него своя — с датой и лентой недели)
   const hero =
     tab === "finance"
-      ? { eyebrow: "Обзор", title: "Финансы", line: `Заработано: ${fmtMoney(earnedMonth)} · Должников: ${debtCount}` }
+      ? {
+          eyebrow: "Обзор",
+          title: "Финансы",
+          line: `За ${monthName}: ${fmtMoney(earnedMonth)} · Должников: ${debtCount}`,
+        }
       : tab === "clients"
         ? { eyebrow: "База", title: "Клиенты", line: `Всего: ${data.clients.length} · Замеров: ${data.measurements.length}` }
         : {
@@ -488,6 +494,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onToast={showToast}
             focusClientId={financeFocusClientId}
             onOptimisticSessionUpdate={data.optimisticUpdateSession}
+            onOptimisticPackageUpdate={data.optimisticUpdatePackage}
           />
         )}
         {tab === "clients" && (
@@ -500,6 +507,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onReload={data.reload}
             onToast={showToast}
             subscriptionTier={data.me.subscriptionTier}
+            defaultPrice={data.me.avgSessionPrice}
             onOpenBeta={() => setBetaOpen(true)}
           />
         )}
@@ -507,6 +515,10 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
           <SettingsPanel
             prefs={prefs}
             onChange={setPrefs}
+            monthlyGoal={me.monthlyGoal}
+            avgSessionPrice={me.avgSessionPrice}
+            onReload={data.reload}
+            onToast={showToast}
             onSeed={seedDemo}
             onOpenBeta={() => setBetaOpen(true)}
             onInstall={() => setInstallOpen(true)}
@@ -532,6 +544,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             history={data.history}
             measurements={data.measurements}
             now={now}
+            defaultPrice={me.avgSessionPrice}
             isLastClient={data.clients.length === 1}
             onReload={data.reload}
             onToast={showToast}
