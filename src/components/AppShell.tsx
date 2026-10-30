@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getTelegramDiagnostics, waitForTelegram, post } from "@/lib/client-api";
+import { del, getTelegramDiagnostics, waitForTelegram, post } from "@/lib/client-api";
+import { isDemoClient } from "@/lib/demo";
+import { confirmAction } from "@/lib/telegram-actions";
 import { setupTelegramShell } from "@/lib/telegram-shell";
+import { syncBackButton, useBackButton } from "@/lib/back-button";
 import { useAppData } from "@/lib/use-app-data";
-import { addDays, dayKey, fmtDayLong, fmtMoney, fmtWeekday, parseDayKey } from "@/lib/time";
-import { sumPrice, type Reminder } from "@/lib/analytics";
+import { addDays, dayKey, fmtDayLong, fmtMoney, fmtWeekday, parseDayKey, startOfMonth } from "@/lib/time";
+import { debtSummary, incomeSummary, type Reminder } from "@/lib/analytics";
 import Sheet from "@/components/ui/Sheet";
 import { IconChevronDown } from "@/components/ui/icons";
 import BottomNav, { type Tab } from "@/components/BottomNav";
 import DayTab from "@/components/dashboard/Dashboard";
-import FinanceTab, { collectDebtors } from "@/components/finance/FinanceTab";
+import FinanceTab from "@/components/finance/FinanceTab";
 import ClientsTab from "@/components/clients/ClientsTab";
 import ClientDetail from "@/components/clients/ClientDetail";
 import SettingsPanel, { useWidgetPrefs } from "@/components/dashboard/SettingsPanel";
@@ -91,8 +94,8 @@ function AuthErrorScreen({
         <h1 className="mt-3 text-lg font-bold text-[#0F1C33]">{message}</h1>
         <p className="mt-2 text-sm text-[#5C6B86]">
           {inTelegram
-            ? "Telegram открыт, но данные для входа не дошли. Нажми «Попробовать снова», а если не поможет — полностью закрой мини-апп и открой его кнопкой меню бота."
-            : "Похоже, страница открыта не внутри Telegram. Открой приложение кнопкой меню бота."}
+            ? "Telegram открыт, но данные для входа не дошли. Нажмите «Попробовать снова», а если не поможет — полностью закройте мини-апп и откройте его кнопкой меню бота."
+            : "Похоже, страница открыта не внутри Telegram. Откройте приложение кнопкой меню бота."}
         </p>
         <button
           type="button"
@@ -215,6 +218,8 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
       const tg = await waitForTelegram(2500);
       if (cancelled || !tg) return;
       teardown = setupTelegramShell(tg);
+      // Шторку могли открыть до загрузки скрипта Telegram
+      syncBackButton();
     })();
     return () => {
       cancelled = true;
@@ -238,7 +243,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   };
 
   const debtCount = useMemo(
-    () => collectDebtors(data.history, data.clients).length,
+    () => debtSummary(data.history, data.clients).debtors.length,
     [data.history, data.clients],
   );
 
@@ -263,6 +268,10 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
     !needsRealOnboarding &&
     !onboardingPreviewOpen;
   const sheetOpen = betaOpen || installOpen;
+
+  // С вкладок «Финансы», «Клиенты» и «Профиль» «Назад» ведёт на главный экран,
+  // а с него — закрывает мини-апп, как обычно в Telegram
+  useBackButton(dashboardVisible && tab !== "day" && !tutorialOpen, () => setTab("day"), 0);
 
   // Автозапуск тура после онбординга. Если поверх открыто окно беты или установки,
   // ждём, пока его закроют, иначе подсветка окажется под ним.
@@ -294,13 +303,48 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
     }
   };
 
+  // Демо-клиенты в базе: показываем, что это демо, и даём убрать их одной кнопкой
+  const hasDemo = data.clients.some(isDemoClient);
+  const removeDemo = async () => {
+    const ok = await confirmAction(
+      "Демо-клиенты удалятся вместе с их тренировками, абонементами и замерами. Ваши клиенты останутся.",
+      { title: "Убрать демо-данные?", okText: "Убрать", destructive: true },
+    );
+    if (!ok) return;
+    try {
+      await del("/api/seed");
+      showToast("Демо-данные убраны");
+      setOpenClientId(null);
+      data.reload();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Не удалось убрать демо-данные");
+    }
+  };
+
   if (data.authError) {
     return <AuthErrorScreen message={data.authError} showGuides={showGuides} onRetry={data.reload} />;
   }
 
   const { now, todayKey, activeKey } = data;
   if (!now || !todayKey || !activeKey || !data.me) {
-    return <div className="grid min-h-dvh place-items-center bg-[#F1F3F9] text-sm text-[#9AA6BE]">Загрузка…</div>;
+    return (
+      <div role="status" aria-label="Загрузка" className="grid min-h-dvh place-items-center bg-[#F1F3F9]">
+        <div className="flex flex-col items-center gap-3">
+          <span className="text-[22px] font-bold tracking-[-0.02em] text-[#0F1C33]">
+            Pragma<span className="text-[#4A5BF0]">Box</span>
+          </span>
+          <span className="flex gap-1.5" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4A5BF0]"
+                style={{ animationDelay: `${i * 180}ms` }}
+              />
+            ))}
+          </span>
+        </div>
+      </div>
+    );
   }
 
   if (needsRealOnboarding || onboardingPreviewOpen) {
@@ -340,13 +384,19 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   const day = parseDayKey(activeKey);
   const isToday = activeKey === todayKey;
   const openClient = data.clients.find((c) => c.id === openClientId) ?? null;
-  const earnedMonth = sumPrice(data.history.filter((s) => s.status === "done"));
+  // Та же сумма, что в плитке «Заработано за месяц» ниже
+  const earnedMonth = incomeSummary(data.history, startOfMonth(now), now).earned;
+  const monthName = now.toLocaleDateString("ru-RU", { month: "long" });
   const me = data.me;
 
   // Шапка вкладок, кроме «Дня» (у него своя — с датой и лентой недели)
   const hero =
     tab === "finance"
-      ? { eyebrow: "Обзор", title: "Финансы", line: `Заработано: ${fmtMoney(earnedMonth)} · Должников: ${debtCount}` }
+      ? {
+          eyebrow: "Обзор",
+          title: "Финансы",
+          line: `За ${monthName}: ${fmtMoney(earnedMonth)} · Должников: ${debtCount}`,
+        }
       : tab === "clients"
         ? { eyebrow: "База", title: "Клиенты", line: `Всего: ${data.clients.length} · Замеров: ${data.measurements.length}` }
         : {
@@ -476,6 +526,8 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             prefs={prefs}
             onToast={showToast}
             onSeed={seedDemo}
+            hasDemo={hasDemo}
+            onRemoveDemo={removeDemo}
             onReminderNavigate={navigateReminder}
           />
         )}
@@ -488,6 +540,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onToast={showToast}
             focusClientId={financeFocusClientId}
             onOptimisticSessionUpdate={data.optimisticUpdateSession}
+            onOptimisticPackageUpdate={data.optimisticUpdatePackage}
           />
         )}
         {tab === "clients" && (
@@ -500,6 +553,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onReload={data.reload}
             onToast={showToast}
             subscriptionTier={data.me.subscriptionTier}
+            defaultPrice={data.me.avgSessionPrice}
             onOpenBeta={() => setBetaOpen(true)}
           />
         )}
@@ -507,7 +561,14 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
           <SettingsPanel
             prefs={prefs}
             onChange={setPrefs}
+            monthlyGoal={me.monthlyGoal}
+            avgSessionPrice={me.avgSessionPrice}
+            onReload={data.reload}
+            onToast={showToast}
             onSeed={seedDemo}
+            canSeed={data.clients.length === 0}
+            hasDemo={hasDemo}
+            onRemoveDemo={removeDemo}
             onOpenBeta={() => setBetaOpen(true)}
             onInstall={() => setInstallOpen(true)}
             showGuides={showGuides}
@@ -532,6 +593,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             history={data.history}
             measurements={data.measurements}
             now={now}
+            defaultPrice={me.avgSessionPrice}
             isLastClient={data.clients.length === 1}
             onReload={data.reload}
             onToast={showToast}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useBackButton } from "@/lib/back-button";
 import { api, post } from "@/lib/client-api";
 import {
   MAX_REVIEW_LENGTH,
@@ -47,6 +48,7 @@ function BetaSheetBody({ onClose, onToast, onInstall }: Omit<BetaSheetProps, "op
   const [sending, setSending] = useState(false);
   const [reviewHint, setReviewHint] = useState<string | null>(null);
   const [priceLabel, setPriceLabel] = useState<string | null>(null);
+  useBackButton(true, onClose);
 
   useEffect(() => {
     let cancelled = false;

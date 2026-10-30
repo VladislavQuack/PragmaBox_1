@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useBackButton } from "@/lib/back-button";
 import { useHomeScreen, type PhoneBrand } from "@/lib/telegram-actions";
 import { haptic } from "@/components/dashboard/TimelineCreator";
 
@@ -71,6 +72,7 @@ const NEUTRAL =
 function InstallSheetBody({ onClose }: { onClose: () => void }) {
   const { phase, device, brand, reason, addedNow, add } = useHomeScreen();
   const ios = device === "ios";
+  useBackButton(true, onClose);
 
   const tryAdd = () => {
     haptic("success");

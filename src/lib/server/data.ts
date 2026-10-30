@@ -1,6 +1,6 @@
 // Серверные хелперы: парсинг входных данных и загрузка связанных сущностей.
 // Все выборки ограничены текущим тренером.
-import { and, asc, count, eq, type SQL } from "drizzle-orm";
+import { and, asc, count, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { clients, measurements, packages, sessions } from "@/db/schema";
 import type { ClientDTO, MeasurementDTO, PackageDTO, SessionDTO } from "@/lib/types";
@@ -9,6 +9,16 @@ export function parseDate(value: unknown): Date | null {
   if (typeof value !== "string" || value.trim() === "") return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+// Дата без времени (YYYY-MM-DD), например срок абонемента. Всё остальное — «не задана».
+export function parseDayKeyInput(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const key = value.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return null;
+  const [y, m, d] = key.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d ? key : null;
 }
 
 export function toInt(value: unknown, fallback: number): number {
@@ -47,7 +57,10 @@ const sessionColumns = {
   kind: sessions.kind,
   status: sessions.status,
   price: sessions.price,
-  paid: sessions.paid,
+  // Занятие по абонементу оплачено, когда оплачен абонемент. Собственная отметка
+  // такого занятия не учитывается: раньше из-за неё долг считался дважды —
+  // и за абонемент, и за каждое занятие из него.
+  paid: sql<boolean>`coalesce(${packages.paid}, ${sessions.paid})`,
   note: sessions.note,
 };
 
@@ -77,6 +90,7 @@ export function toPackageDTO(p: typeof packages.$inferSelect): PackageDTO {
     price: p.price,
     paid: p.paid,
     expiresAt: p.expiresAt ?? null,
+    createdAt: p.createdAt.toISOString(),
   };
 }
 

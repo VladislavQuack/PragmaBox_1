@@ -42,7 +42,7 @@ function fileHeaders(fileName: string, length: number): HeadersInit {
 }
 
 const gone = () =>
-  new Response("Ссылка устарела. Нажмите «Выгрузить таблицей» в приложении ещё раз.", {
+  new Response("Ссылка устарела. Нажмите «Скачать замеры для Excel» в приложении ещё раз.", {
     status: 410,
     headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
   });

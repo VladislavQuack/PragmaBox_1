@@ -75,7 +75,7 @@ export default function MeasurementForm({
     });
 
   const save = async () => {
-    if (activeKeys.length === 0 && !note.trim()) return onToast("Добавь хотя бы один показатель");
+    if (activeKeys.length === 0 && !note.trim()) return onToast("Добавьте хотя бы один показатель");
     setSaving(true);
     try {
       await post("/api/measurements", { clientId, takenOn: date, ...values, note });
@@ -203,7 +203,7 @@ export default function MeasurementForm({
           onClick={save}
           className="rounded-2xl bg-[var(--ios-blue)] py-3 text-sm font-bold text-white disabled:opacity-60"
         >
-          {saving ? "Сохраняю…" : "Сохранить"}
+          {saving ? "Сохраняем…" : "Сохранить"}
         </button>
       </div>
     </div>

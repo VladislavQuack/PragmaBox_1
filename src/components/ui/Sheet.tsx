@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useBackButton } from "@/lib/back-button";
 import { IconClose } from "@/components/ui/icons";
 
 // Стек открытых шторок: Escape закрывает только верхнюю, а не все сразу
@@ -31,6 +32,9 @@ export default function Sheet({ open, onClose, title, children, full = false, ba
   useEffect(() => {
     closeRef.current = onClose;
   });
+
+  // «Назад» в Telegram закрывает шторку, а не весь мини-апп
+  useBackButton(open, () => closeRef.current());
 
   useEffect(() => {
     if (!open) return;

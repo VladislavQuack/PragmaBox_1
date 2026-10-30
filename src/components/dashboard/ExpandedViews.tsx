@@ -4,14 +4,16 @@ import { DAILY_GOAL, WORK_END_HOUR, WORK_START_HOUR } from "@/lib/config";
 import {
   dailyEarnings,
   dayGaps,
+  debtSummary,
   incomeSummary,
   isActive,
   startMs,
   type Gap,
   type Reminder,
 } from "@/lib/analytics";
+import { packageTitle } from "@/lib/packages";
 import { atMinute, fmtDuration, fmtMinute, fmtMoney, fmtShortDate, fmtTime, startOfMonth } from "@/lib/time";
-import type { SessionDTO } from "@/lib/types";
+import type { ClientDTO, SessionDTO } from "@/lib/types";
 import { IconArrowRight } from "@/components/ui/icons";
 
 const card = "rounded-[22px] border border-[#E6EAF3] bg-white p-4 shadow-sm";
@@ -28,12 +30,20 @@ function Stat({ label, value, tone = "default" }: { label: string; value: string
 
 interface IncomeExpandedProps {
   history: SessionDTO[];
+  clients: ClientDTO[];
   now: Date;
   onPay: (sessionId: number) => void;
+  onPayPackage: (packageId: number) => void;
 }
 
-export function IncomeExpanded({ history, now, onPay }: IncomeExpandedProps) {
+export function IncomeExpanded({ history, clients, now, onPay, onPayPackage }: IncomeExpandedProps) {
   const sum = incomeSummary(history, startOfMonth(now), now);
+  // Долги — те же, что на вкладке «Финансы»: разовые тренировки и неоплаченные абонементы
+  const debts = debtSummary(history, clients);
+  const unpaidSessions = debts.debtors
+    .flatMap((d) => d.sessions)
+    .sort((a, b) => startMs(b) - startMs(a));
+  const unpaidPackages = debts.debtors.flatMap((d) => d.packages.map((p) => ({ p, name: d.name })));
   const series = dailyEarnings(history, now, 14);
   const max = Math.max(DAILY_GOAL / 2, ...series.map((x) => x.sum));
 
@@ -41,9 +51,9 @@ export function IncomeExpanded({ history, now, onPay }: IncomeExpandedProps) {
     <div className="space-y-3 pb-4">
       <div className="grid grid-cols-2 gap-2.5">
         <Stat label="Заработано за месяц" value={fmtMoney(sum.earned)} tone="good" />
-        <Stat label="Получено" value={fmtMoney(sum.received)} />
+        <Stat label="Получено за месяц" value={fmtMoney(sum.received)} />
         <Stat label="Ожидается" value={fmtMoney(sum.planned)} />
-        <Stat label="Долги" value={fmtMoney(sum.unpaid)} tone={sum.unpaid > 0 ? "bad" : "default"} />
+        <Stat label="Должны сейчас" value={fmtMoney(debts.total)} tone={debts.total > 0 ? "bad" : "default"} />
       </div>
 
       <section className={card}>
@@ -70,11 +80,28 @@ export function IncomeExpanded({ history, now, onPay }: IncomeExpandedProps) {
 
       <section className={card}>
         <h3 className="mb-3 text-[15px] font-bold text-[#0F1C33]">Не оплачено</h3>
-        {sum.unpaidList.length === 0 ? (
+        {unpaidSessions.length === 0 && unpaidPackages.length === 0 ? (
           <p className="text-sm text-[#9AA6BE]">Долгов нет</p>
         ) : (
           <ul className="space-y-2">
-            {sum.unpaidList.map((s) => (
+            {unpaidPackages.map(({ p, name }) => (
+              <li key={`p-${p.id}`} className="flex items-center justify-between gap-2 rounded-2xl bg-[#FFF4E5] px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-[#0F1C33]">{name}</p>
+                  <p className="truncate text-xs text-[#5C6B86]">
+                    {packageTitle(p.totalSessions)} · {fmtMoney(p.price)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onPayPackage(p.id)}
+                  className="shrink-0 rounded-full bg-[#1DB871] px-3 py-1.5 text-xs font-bold text-white"
+                >
+                  Оплачен
+                </button>
+              </li>
+            ))}
+            {unpaidSessions.map((s) => (
               <li key={s.id} className="flex items-center justify-between gap-2 rounded-2xl bg-[#FDECEF] px-3 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-[#0F1C33]">{s.clientName}</p>
@@ -117,7 +144,7 @@ export function NextExpanded({ day, sessions, now, isToday }: NextExpandedProps)
     <div className="space-y-3 pb-2">
       <div className={card}>
         <p className="text-[12px] font-medium text-[#5C6B86]">Сейчас</p>
-        <p className="mt-1 font-bold text-[#0F1C33]">{!isToday ? "Смотришь другой день" : busyNow ? "Клиент на тренировке" : "Свободен"}</p>
+        <p className="mt-1 font-bold text-[#0F1C33]">{!isToday ? "Выбран другой день" : busyNow ? "Идёт тренировка" : "Свободное время"}</p>
         <p className="mt-1 text-xs text-[#9AA6BE]">
           Рабочий день {fmtMinute(WORK_START_HOUR * 60)}–{fmtMinute(WORK_END_HOUR * 60)}
         </p>

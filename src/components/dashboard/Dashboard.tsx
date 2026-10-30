@@ -39,6 +39,8 @@ export default function DayTab({
   prefs,
   onToast,
   onSeed,
+  hasDemo,
+  onRemoveDemo,
   onReminderNavigate,
 }: {
   data: AppData;
@@ -47,6 +49,8 @@ export default function DayTab({
   prefs: WidgetPrefs;
   onToast: (msg: string) => void;
   onSeed: () => void;
+  hasDemo: boolean;
+  onRemoveDemo: () => void;
   onReminderNavigate: (r: Reminder) => void;
 }) {
   const [panel, setPanel] = useState<Panel | null>(null);
@@ -81,6 +85,8 @@ export default function DayTab({
   const workEnd = atMinute(day, WORK_END_HOUR * 60);
   const monthIncome = incomeSummary(history, startOfMonth(now), now).earned;
   const monthlyGoal = data.me?.monthlyGoal ?? 30000;
+  // Цена разовой тренировки по умолчанию — из онбординга или профиля
+  const defaultPrice = data.me?.avgSessionPrice ?? 1500;
   const nextGap = isToday ? nextWindow(daySessions, now, workEnd) : null;
   const reminders: Reminder[] = buildReminders(history, clients, now);
   const actionSession = [...daySessions, ...history].find((s) => s.id === actionId) ?? null;
@@ -153,6 +159,20 @@ export default function DayTab({
     }
   };
 
+  const markPackagePaid = async (packageId: number) => {
+    data.optimisticUpdatePackage(packageId, { paid: true });
+    onToast("Абонемент оплачен");
+    haptic("success");
+
+    try {
+      await patch(`/api/packages/${packageId}`, { paid: true });
+    } catch (e) {
+      onToast(errText(e));
+    }
+    // Занятия из абонемента тоже стали оплаченными — берём свежие данные
+    reload();
+  };
+
   const followReminder = (r: Reminder) => {
     setPanel(null);
     onReminderNavigate(r);
@@ -166,7 +186,7 @@ export default function DayTab({
         <div className="glass-card shrink-0 rounded-[28px] p-5 text-center">
           <p className="font-semibold text-[#0F1C33]">Пока пусто</p>
           <p className="mt-1 text-sm text-[#5C6B86]">
-            Добавь клиента кнопкой «+» или загрузи демо-данные, чтобы увидеть дашборд в деле.
+            Добавьте клиента кнопкой «+» или загрузите демо-данные, чтобы увидеть дашборд в деле.
           </p>
           <button
             type="button"
@@ -174,6 +194,22 @@ export default function DayTab({
             className="mt-4 rounded-full bg-[#4A5BF0] px-4 py-2 text-sm font-semibold text-white"
           >
             Загрузить демо-данные
+          </button>
+        </div>
+      )}
+
+      {hasDemo && (
+        <div className="flex shrink-0 items-center gap-3 rounded-[20px] border border-[#E6EAF3] bg-white/80 px-4 py-2.5">
+          <p className="min-w-0 flex-1 text-[12px] leading-snug text-[#5C6B86]">
+            <span className="font-semibold text-[#0F1C33]">Это демо-данные.</span> Посмотрите, как всё работает, и уберите их,
+            когда начнёте вести своих клиентов.
+          </p>
+          <button
+            type="button"
+            onClick={onRemoveDemo}
+            className="shrink-0 rounded-full bg-[#F1F3F9] px-3 py-1.5 text-[12px] font-bold text-[#4A5BF0] transition active:scale-95"
+          >
+            Убрать
           </button>
         </div>
       )}
@@ -228,6 +264,7 @@ export default function DayTab({
                 viewDay={day}
                 viewSessions={daySessions}
                 now={now}
+                defaultPrice={defaultPrice}
                 initialStart={wizard.initialStart}
                 origin={wizard.origin}
                 onDone={finishWizard}
@@ -273,6 +310,7 @@ export default function DayTab({
                     viewDay={day}
                     viewSessions={daySessions}
                     now={now}
+                    defaultPrice={defaultPrice}
                     initialStart={mapWizard.initialStart}
                     origin={mapWizard.origin}
                     onDone={finishWizard}
@@ -287,7 +325,13 @@ export default function DayTab({
       </Sheet>
 
       <Sheet open={panel === "income"} onClose={() => setPanel(null)} title="Доходы" full>
-        <IncomeExpanded history={history} now={now} onPay={(id) => void markPaid(id)} />
+        <IncomeExpanded
+          history={history}
+          clients={clients}
+          now={now}
+          onPay={(id) => void markPaid(id)}
+          onPayPackage={(id) => void markPackagePaid(id)}
+        />
       </Sheet>
 
       <Sheet open={panel === "next"} onClose={() => setPanel(null)} title="Окна и перерывы">

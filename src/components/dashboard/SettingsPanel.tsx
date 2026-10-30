@@ -1,8 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { patch } from "@/lib/client-api";
 import { REFERRAL_BONUS_MONTHS, REVIEW_BONUS_MONTHS, monthsLabel } from "@/lib/beta";
+import { fmtMoney } from "@/lib/time";
 import InstallCard from "@/components/beta/InstallCard";
+import { haptic } from "@/components/dashboard/TimelineCreator";
 
 
 export interface WidgetPrefs {
@@ -53,7 +56,16 @@ export function useWidgetPrefs(): [WidgetPrefs, (p: WidgetPrefs) => void] {
 interface SettingsPanelProps {
   prefs: WidgetPrefs;
   onChange: (p: WidgetPrefs) => void;
+  // Цель на месяц и обычная цена тренировки (задаются в онбординге)
+  monthlyGoal: number;
+  avgSessionPrice: number;
+  onReload: () => void;
+  onToast: (msg: string) => void;
   onSeed: () => void;
+  // Демо можно загрузить только в пустую базу, а убрать — когда демо-клиенты есть
+  canSeed: boolean;
+  hasDemo: boolean;
+  onRemoveDemo: () => void;
   // Повтор тура по приложению (сам он запускается после онбординга)
   onStartTutorial?: () => void;
   onOpenBeta?: () => void;
@@ -72,7 +84,14 @@ const WIDGETS: { key: keyof WidgetPrefs; title: string; hint: string }[] = [
 export default function SettingsPanel({
   prefs,
   onChange,
+  monthlyGoal,
+  avgSessionPrice,
+  onReload,
+  onToast,
   onSeed,
+  canSeed,
+  hasDemo,
+  onRemoveDemo,
   onStartTutorial,
   onOpenBeta,
   onInstall,
@@ -106,6 +125,8 @@ export default function SettingsPanel({
       )}
 
       {onInstall && <InstallCard onOpen={onInstall} />}
+
+      <GoalsCard monthlyGoal={monthlyGoal} avgSessionPrice={avgSessionPrice} onReload={onReload} onToast={onToast} />
 
       <section className="space-y-2">
         <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Виджеты на дашборде</p>
@@ -152,13 +173,34 @@ export default function SettingsPanel({
         </section>
       )}
 
-      <section className="space-y-2">
-        <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Демо</p>
-        <button type="button" onClick={onSeed} className="w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-[#0F1C33] shadow-sm">
-          Загрузить демо-данные
-          <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">Работает только если база пустая</span>
-        </button>
-      </section>
+      {(canSeed || hasDemo) && (
+        <section className="space-y-2">
+          <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Демо</p>
+          {hasDemo ? (
+            <button
+              type="button"
+              onClick={onRemoveDemo}
+              className="w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-[#F04452] shadow-sm"
+            >
+              Убрать демо-данные
+              <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">
+                Удалятся только демо-клиенты, ваши останутся
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onSeed}
+              className="w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-[#0F1C33] shadow-sm"
+            >
+              Загрузить демо-данные
+              <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">
+                Пять клиентов с расписанием и оплатами — чтобы посмотреть приложение в деле
+              </span>
+            </button>
+          )}
+        </section>
+      )}
 
       {/* Обычная белая карточка, как остальные пункты профиля: тур и так показывается
           после онбординга, а здесь его можно открыть ещё раз */}
@@ -176,5 +218,100 @@ export default function SettingsPanel({
         </section>
       )}
     </div>
+  );
+}
+
+// Цель на месяц (прогресс на главном экране) и цена тренировки (подставляется в новые записи)
+function GoalsCard({
+  monthlyGoal,
+  avgSessionPrice,
+  onReload,
+  onToast,
+}: {
+  monthlyGoal: number;
+  avgSessionPrice: number;
+  onReload: () => void;
+  onToast: (msg: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [goal, setGoal] = useState(String(monthlyGoal));
+  const [price, setPrice] = useState(String(avgSessionPrice));
+  const [saving, setSaving] = useState(false);
+
+  const open = () => {
+    setGoal(String(monthlyGoal));
+    setPrice(String(avgSessionPrice));
+    setEditing(true);
+  };
+
+  const save = async () => {
+    const g = Math.round(Number(goal));
+    const p = Math.round(Number(price));
+    if (!Number.isFinite(g) || g < 0 || g > 1_000_000) return onToast("Цель — от 0 до 1 000 000 ₽");
+    if (!Number.isFinite(p) || p < 0 || p > 100_000) return onToast("Цена — от 0 до 100 000 ₽");
+    setSaving(true);
+    try {
+      await patch("/api/me", { monthlyGoal: g, avgSessionPrice: p });
+      haptic("success");
+      onToast("Сохранено");
+      setEditing(false);
+      onReload();
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : "Не удалось сохранить");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const input =
+    "w-full rounded-xl border border-[#E0E5F1] bg-white px-3 py-2.5 text-base font-semibold text-[#0F1C33] outline-none focus:border-[#4A5BF0]";
+
+  return (
+    <section className="space-y-2">
+      <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Цель и цены</p>
+      {editing ? (
+        <div className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
+          <label className="block space-y-1.5">
+            <span className="text-xs font-medium text-[#5C6B86]">Цель на месяц, ₽</span>
+            <input type="number" inputMode="numeric" min={0} value={goal} onChange={(e) => setGoal(e.target.value)} className={input} />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="text-xs font-medium text-[#5C6B86]">Обычная цена тренировки, ₽</span>
+            <input type="number" inputMode="numeric" min={0} value={price} onChange={(e) => setPrice(e.target.value)} className={input} />
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-xl bg-[#F1F3F9] py-2.5 text-sm font-semibold text-[#5C6B86]"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              onClick={save}
+              disabled={saving}
+              className="rounded-xl bg-[#4A5BF0] py-2.5 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {saving ? "Сохраняем…" : "Сохранить"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" onClick={open} className="w-full divide-y divide-[#EFF1F6] rounded-2xl bg-white px-4 text-left shadow-sm">
+          <span className="flex items-center justify-between gap-3 py-3.5">
+            <span className="text-sm font-semibold text-[#0F1C33]">Цель на месяц</span>
+            <span className="text-sm font-semibold tabular-nums text-[#5C6B86]">{fmtMoney(monthlyGoal)}</span>
+          </span>
+          <span className="flex items-center justify-between gap-3 py-3.5">
+            <span className="text-sm font-semibold text-[#0F1C33]">Цена тренировки</span>
+            <span className="text-sm font-semibold tabular-nums text-[#5C6B86]">{fmtMoney(avgSessionPrice)}</span>
+          </span>
+        </button>
+      )}
+      <p className="px-1 text-xs text-[#5C6B86]">
+        Цена подставляется в новые тренировки и абонементы — её всегда можно поменять при записи.
+      </p>
+    </section>
   );
 }

@@ -355,7 +355,7 @@ export default function TimelineWidget({
       <div className="flex shrink-0 items-end justify-between gap-3 pt-2">
         <p className="min-w-0 text-[10px] leading-snug text-[#9AA6BE]">
           {sessions.length === 0
-            ? "Свободный день. Тапни по линии или «+», чтобы записать клиента"
+            ? "Свободный день. Нажмите на линию или «+», чтобы записать клиента"
             : "Тап: действия · зажать: перенос · тап по линии: запись"}
         </p>
         <button

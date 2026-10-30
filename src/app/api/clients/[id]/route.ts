@@ -2,11 +2,47 @@ import { and, count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { clients, measurements, packages, sessions, trainers } from "@/db/schema";
 import { withTrainer } from "@/lib/server/auth";
-import { notFound } from "@/lib/server/data";
+import { badRequest, loadClients, notFound, toText } from "@/lib/server/data";
 
 export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
+
+const MAX_NAME = 80;
+const MAX_PHONE = 40;
+const MAX_NOTE = 1000;
+
+// Изменение карточки клиента: имя, телефон, заметка
+export function PATCH(req: Request, { params }: Params) {
+  return withTrainer(req, async (trainer) => {
+    const id = Number((await params).id);
+    if (!Number.isSafeInteger(id) || id <= 0) return notFound("Клиент не найден");
+    const body = ((await req.json().catch(() => ({}))) ?? {}) as Record<string, unknown>;
+
+    const updates: Partial<typeof clients.$inferInsert> = {};
+    if (body.name !== undefined) {
+      const name = toText(body.name);
+      if (!name) return badRequest("Введите имя клиента");
+      updates.name = name.slice(0, MAX_NAME);
+    }
+    if (body.phone !== undefined) updates.phone = toText(body.phone)?.slice(0, MAX_PHONE) ?? null;
+    if (body.note !== undefined) updates.note = toText(body.note)?.slice(0, MAX_NOTE) ?? null;
+
+    if (Object.keys(updates).length > 0) {
+      const [updated] = await db
+        .update(clients)
+        .set(updates)
+        .where(and(eq(clients.id, id), eq(clients.trainerId, trainer.id)))
+        .returning({ id: clients.id });
+      if (!updated) return notFound("Клиент не найден");
+    }
+
+    const all = await loadClients(trainer.id);
+    const client = all.find((c) => c.id === id);
+    if (!client) return notFound("Клиент не найден");
+    return Response.json({ client });
+  });
+}
 
 // Удаляет клиента вместе со всеми его данными: тренировками, абонементами и замерами.
 // Если это был последний клиент тренера, сбрасываем флаг онбординга —

@@ -1,6 +1,7 @@
-import { count, eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { clients, measurements, packages, sessions } from "@/db/schema";
+import { DEMO_NOTE, isDemoClient } from "@/lib/demo";
 import { withTrainer } from "@/lib/server/auth";
 import { badRequest, parseDate } from "@/lib/server/data";
 
@@ -110,14 +111,15 @@ export function POST(req: Request) {
       .where(eq(clients.trainerId, trainer.id));
     if (existing > 0) return Response.json({ seeded: false });
 
-    const ids = new Map<string, { clientId: number; packageId: number | null }>();
+    const ids = new Map<string, { clientId: number; packageId: number | null; packagePaid: boolean }>();
     for (const d of DEMO_CLIENTS) {
       const [client] = await db
         .insert(clients)
-        .values({ trainerId: trainer.id, name: d.name, phone: d.phone })
+        .values({ trainerId: trainer.id, name: d.name, phone: d.phone, note: DEMO_NOTE })
         .returning({ id: clients.id });
 
       let packageId: number | null = null;
+      let packagePaid = false;
       if (d.pkg) {
         const expires = new Date(now.getTime() + d.pkg.expDays * 86_400_000)
           .toISOString()
@@ -136,8 +138,9 @@ export function POST(req: Request) {
           })
           .returning({ id: packages.id });
         packageId = pkg.id;
+        packagePaid = d.pkg.paid;
       }
-      ids.set(d.name, { clientId: client.id, packageId });
+      ids.set(d.name, { clientId: client.id, packageId, packagePaid });
     }
 
     const rows: (typeof sessions.$inferInsert)[] = [];
@@ -157,7 +160,8 @@ export function POST(req: Request) {
         kind: t.kind,
         status: t.status ?? (ended ? "done" : "planned"),
         price: t.price,
-        paid: t.paid,
+        // Занятие по абонементу оплачено вместе с абонементом
+        paid: info.packageId ? info.packagePaid : t.paid,
       });
     }
 
@@ -177,7 +181,7 @@ export function POST(req: Request) {
           kind: "individual",
           status: "done",
           price: 1200,
-          paid: h.name === "Михаил" ? i % 2 === 0 : true,
+          paid: info.packageId ? info.packagePaid : true,
         });
       }
     }
@@ -209,5 +213,43 @@ export function POST(req: Request) {
     if (msRows.length > 0) await db.insert(measurements).values(msRows);
 
     return Response.json({ seeded: true });
+  });
+}
+
+// «Убрать демо-данные»: удаляет только демо-клиентов со всеми их записями.
+// Настоящие клиенты тренера и настройки не трогаются.
+export function DELETE(req: Request) {
+  return withTrainer(req, async (trainer) => {
+    const result = await db.transaction(async (tx) => {
+      const rows = await tx
+        .select({ id: clients.id, name: clients.name, phone: clients.phone, note: clients.note, createdAt: clients.createdAt })
+        .from(clients)
+        .where(eq(clients.trainerId, trainer.id));
+
+      const demo = rows.filter(isDemoClient);
+      // В старых демо-данных у Анны не было телефона: узнаём её по времени создания
+      // рядом с остальными демо-клиентами
+      const legacyMaria = demo.find((c) => c.name === "Мария" && c.note !== DEMO_NOTE);
+      if (legacyMaria) {
+        const anna = rows.find(
+          (c) =>
+            c.name === "Анна" &&
+            !c.phone &&
+            !c.note &&
+            Math.abs(c.createdAt.getTime() - legacyMaria.createdAt.getTime()) < 60_000,
+        );
+        if (anna) demo.push(anna);
+      }
+
+      const ids = demo.map((c) => c.id);
+      if (ids.length > 0) {
+        await tx.delete(sessions).where(and(eq(sessions.trainerId, trainer.id), inArray(sessions.clientId, ids)));
+        await tx.delete(measurements).where(and(eq(measurements.trainerId, trainer.id), inArray(measurements.clientId, ids)));
+        await tx.delete(packages).where(and(eq(packages.trainerId, trainer.id), inArray(packages.clientId, ids)));
+        await tx.delete(clients).where(and(eq(clients.trainerId, trainer.id), inArray(clients.id, ids)));
+      }
+      return { removed: ids.length, remainingClients: rows.length - ids.length };
+    });
+    return Response.json({ ok: true, ...result });
   });
 }

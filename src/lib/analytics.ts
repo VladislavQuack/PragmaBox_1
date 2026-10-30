@@ -1,7 +1,8 @@
 // Чистая логика дашборда: статусы, раскладка таймлайна, окна, доход и напоминания.
 import { MIN_GAP_MINUTES } from "./config";
+import { currentPackage, packageTitle, sessionsLabel } from "./packages";
 import { addDays, fmtMoney, fmtShortDate, pad, parseDayKey, startOfDay } from "./time";
-import type { ClientDTO, SessionDTO } from "./types";
+import type { ClientDTO, PackageDTO, SessionDTO } from "./types";
 
 export type Tone = "ok" | "warn" | "bad" | "muted";
 
@@ -112,6 +113,8 @@ export function nextWindow(list: SessionDTO[], now: Date, workEnd: Date): Gap | 
   return dayGaps(list, now, workEnd)[0] ?? null;
 }
 
+// Доход считаем по проведённым тренировкам: занятие из абонемента приносит свою долю его цены.
+// «Получено» — та часть, за которую деньги уже пришли (у занятий по абонементу — если он оплачен).
 export function incomeSummary(list: SessionDTO[], monthStart: Date, now: Date) {
   const from = monthStart.getTime();
   const to = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1).getTime();
@@ -120,16 +123,97 @@ export function incomeSummary(list: SessionDTO[], monthStart: Date, now: Date) {
     return t >= from && t < to;
   });
   const done = inMonth.filter((s) => s.status === "done");
-  const unpaidList = list
-    .filter((s) => s.status === "done" && s.price > 0 && !s.paid)
-    .sort((a, b) => startMs(b) - startMs(a));
   return {
     earned: sumPrice(done),
     received: sumPrice(done.filter((s) => s.paid)),
     planned: sumPrice(inMonth.filter((s) => s.status === "planned" && startMs(s) >= now.getTime())),
-    unpaid: sumPrice(unpaidList),
-    unpaidList,
   };
+}
+
+// ───────── Долги ─────────
+// Долг — это проведённые разовые тренировки без оплаты и неоплаченные абонементы (на всю сумму).
+// Занятия из абонемента отдельным долгом не считаются: за них платят абонементом.
+
+export const isSessionDebt = (s: SessionDTO): boolean =>
+  s.status === "done" && !s.paid && s.price > 0 && s.packageId === null;
+
+export const isPackageDebt = (p: PackageDTO): boolean => !p.paid && p.price > 0;
+
+export interface Debtor {
+  clientId: number;
+  name: string;
+  sessions: SessionDTO[];
+  packages: PackageDTO[];
+  sessionSum: number;
+  packageSum: number;
+  total: number;
+  // Самая ранняя неоплаченная тренировка (YYYY-MM-DD)
+  oldest: string | null;
+}
+
+export interface DebtSummary {
+  total: number;
+  sessionsTotal: number;
+  packagesTotal: number;
+  debtors: Debtor[];
+  byClient: Map<number, Debtor>;
+}
+
+export function debtSummary(history: SessionDTO[], clients: ClientDTO[]): DebtSummary {
+  const byClient = new Map<number, Debtor>();
+  const names = new Map(clients.map((c) => [c.id, c.name]));
+  const touch = (clientId: number, name: string) => {
+    let d = byClient.get(clientId);
+    if (!d) {
+      d = { clientId, name, sessions: [], packages: [], sessionSum: 0, packageSum: 0, total: 0, oldest: null };
+      byClient.set(clientId, d);
+    }
+    return d;
+  };
+
+  for (const s of history) {
+    if (!isSessionDebt(s)) continue;
+    const d = touch(s.clientId, names.get(s.clientId) ?? s.clientName);
+    d.sessions.push(s);
+    d.sessionSum += s.price;
+    const day = s.startsAt.slice(0, 10);
+    if (!d.oldest || day < d.oldest) d.oldest = day;
+  }
+
+  for (const c of clients) {
+    for (const p of c.packages) {
+      if (!isPackageDebt(p)) continue;
+      const d = touch(c.id, c.name);
+      d.packages.push(p);
+      d.packageSum += p.price;
+    }
+  }
+
+  const debtors = [...byClient.values()]
+    .map((d) => {
+      d.total = d.sessionSum + d.packageSum;
+      return d;
+    })
+    .filter((d) => d.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  return {
+    total: debtors.reduce((acc, d) => acc + d.total, 0),
+    sessionsTotal: debtors.reduce((acc, d) => acc + d.sessionSum, 0),
+    packagesTotal: debtors.reduce((acc, d) => acc + d.packageSum, 0),
+    debtors,
+    byClient,
+  };
+}
+
+// «2 трен. · 2 400 ₽ · абонемент 9 600 ₽»
+export function debtorDetails(d: Debtor): string {
+  const parts: string[] = [];
+  if (d.sessions.length > 0) parts.push(`${d.sessions.length} трен. · ${fmtMoney(d.sessionSum)}`);
+  if (d.packages.length > 0) {
+    parts.push(d.packages.length === 1 ? `абонемент ${fmtMoney(d.packageSum)}` : `абонементы ${fmtMoney(d.packageSum)}`);
+  }
+  return parts.join(" · ");
 }
 
 export function dailyEarnings(list: SessionDTO[], now: Date, days: number) {
@@ -151,7 +235,7 @@ export function buildReminders(list: SessionDTO[], clients: ClientDTO[], now: Da
   const out: Reminder[] = [];
 
   list
-    .filter((s) => s.status === "done" && s.price > 0 && !s.paid)
+    .filter(isSessionDebt)
     .sort((a, b) => startMs(b) - startMs(a))
     .forEach((s) =>
       out.push({
@@ -166,21 +250,23 @@ export function buildReminders(list: SessionDTO[], clients: ClientDTO[], now: Da
     );
 
   for (const c of clients) {
-    // Учитываем только актуальный (последний) абонемент клиента
-    const pkg = c.packages[c.packages.length - 1];
-    if (!pkg) continue;
-
-    if (pkg.price > 0 && !pkg.paid && pkg.remainingSessions > 0) {
+    // Неоплаченный абонемент — долг, даже если он уже закончился или куплен новый
+    for (const p of c.packages) {
+      if (!isPackageDebt(p)) continue;
       out.push({
-        id: `pkg-unpaid-${pkg.id}`,
+        id: `pkg-unpaid-${p.id}`,
         kind: "pkg-unpaid",
         tone: "bad",
         title: `Абонемент не оплачен: ${c.name}`,
-        sub: `${pkg.title} · ${fmtMoney(pkg.price)}`,
-        packageId: pkg.id,
+        sub: `${packageTitle(p.totalSessions)} · ${fmtMoney(p.price)}`,
+        packageId: p.id,
         clientId: c.id,
       });
     }
+
+    // Остальное — только про действующий абонемент: после продления старые не напоминают о себе
+    const pkg = currentPackage(c);
+    if (!pkg) continue;
 
     if (pkg.remainingSessions <= 0) {
       out.push({
@@ -188,16 +274,20 @@ export function buildReminders(list: SessionDTO[], clients: ClientDTO[], now: Da
         kind: "empty",
         tone: "warn",
         title: `Закончился абонемент: ${c.name}`,
-        sub: "Пора продать новый",
+        sub: "Пора продлить",
+        packageId: pkg.id,
         clientId: c.id,
       });
-    } else if (pkg.remainingSessions === 1) {
+      continue;
+    }
+    if (pkg.remainingSessions === 1) {
       out.push({
         id: `low-${pkg.id}`,
         kind: "low",
         tone: "warn",
         title: `Осталось 1 занятие: ${c.name}`,
-        sub: pkg.title,
+        sub: `${packageTitle(pkg.totalSessions)} · пора продлить`,
+        packageId: pkg.id,
         clientId: c.id,
       });
     }
@@ -210,7 +300,8 @@ export function buildReminders(list: SessionDTO[], clients: ClientDTO[], now: Da
           kind: "expiring",
           tone: "warn",
           title: `Заканчивается абонемент: ${c.name}`,
-          sub: `до ${fmtShortDate(parseDayKey(pkg.expiresAt))}`,
+          sub: `до ${fmtShortDate(parseDayKey(pkg.expiresAt))} · осталось ${sessionsLabel(pkg.remainingSessions)}`,
+          packageId: pkg.id,
           clientId: c.id,
         });
       }
