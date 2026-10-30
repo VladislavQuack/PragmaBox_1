@@ -39,6 +39,8 @@ export default function DayTab({
   prefs,
   onToast,
   onSeed,
+  hasDemo,
+  onRemoveDemo,
   onReminderNavigate,
 }: {
   data: AppData;
@@ -47,6 +49,8 @@ export default function DayTab({
   prefs: WidgetPrefs;
   onToast: (msg: string) => void;
   onSeed: () => void;
+  hasDemo: boolean;
+  onRemoveDemo: () => void;
   onReminderNavigate: (r: Reminder) => void;
 }) {
   const [panel, setPanel] = useState<Panel | null>(null);
@@ -190,6 +194,22 @@ export default function DayTab({
             className="mt-4 rounded-full bg-[#4A5BF0] px-4 py-2 text-sm font-semibold text-white"
           >
             Загрузить демо-данные
+          </button>
+        </div>
+      )}
+
+      {hasDemo && (
+        <div className="flex shrink-0 items-center gap-3 rounded-[20px] border border-[#E6EAF3] bg-white/80 px-4 py-2.5">
+          <p className="min-w-0 flex-1 text-[12px] leading-snug text-[#5C6B86]">
+            <span className="font-semibold text-[#0F1C33]">Это демо-данные.</span> Посмотрите, как всё работает, и уберите их,
+            когда начнёте вести своих клиентов.
+          </p>
+          <button
+            type="button"
+            onClick={onRemoveDemo}
+            className="shrink-0 rounded-full bg-[#F1F3F9] px-3 py-1.5 text-[12px] font-bold text-[#4A5BF0] transition active:scale-95"
+          >
+            Убрать
           </button>
         </div>
       )}

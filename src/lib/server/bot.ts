@@ -84,19 +84,20 @@ const PRICE_ROWS: InlineButton[][] = [
   PRICE_OPTIONS.slice(2).map((o) => ({ text: o.label, callback_data: `price:${o.id}` })),
 ];
 
+// Приветствие: сначала — что это и чем полезно, бонусы беты — одной строкой в конце
 async function sendWelcome(chatId: number, firstName: string, origin: string | null, invitedBy: string | null) {
   const lines = [
-    `👋 <b>Привет${firstName ? `, ${escapeHtml(firstName)}` : ""}! Это PragmaBox</b> — рабочий кабинет персонального тренера прямо в Telegram: расписание дня, клиенты, абонементы, оплаты и замеры.`,
-    invitedBy ? `🤝 Вас пригласил(а) <b>${escapeHtml(invitedBy)}</b> — добро пожаловать!` : null,
-    `🧪 <b>Идёт бета-тест.</b> Все функции открыты и бесплатны, клиентов — сколько угодно.`,
+    `<b>Привет${firstName ? `, ${escapeHtml(firstName)}` : ""}! Это PragmaBox</b> — рабочий кабинет персонального тренера прямо в Telegram.`,
+    invitedBy ? `Вас пригласил(а) <b>${escapeHtml(invitedBy)}</b> — добро пожаловать!` : null,
     [
-      `🎁 <b>Бонусы участникам беты</b> — Premium, когда выйдет платная версия:`,
-      `• ✍️ за отзыв — ${B(REVIEW_BONUS_MONTHS)};`,
-      `• 🤝 за друга-тренера, который начнёт пользоваться, — ${B(REFERRAL_BONUS_MONTHS)}.`,
+      `Что внутри:`,
+      `• расписание дня — клиента можно записать за пару касаний;`,
+      `• абонементы — занятия списываются сами, видно, когда пора продлевать;`,
+      `• оплаты — кто сколько должен и сколько вы заработали за месяц;`,
+      `• замеры клиентов с графиками прогресса.`,
     ].join("\n"),
-    origin?.startsWith("https://")
-      ? `📲 Нажмите «Установить на телефон» — PragmaBox появится иконкой на главном экране, как обычное приложение.`
-      : null,
+    `Сейчас идёт бета: всё бесплатно, клиентов — сколько угодно. Первая настройка займёт около минуты.`,
+    `🎁 За отзыв и приглашённого друга-тренера — до ${B(REVIEW_BONUS_MONTHS + REFERRAL_BONUS_MONTHS)} Premium, когда выйдет платная версия.`,
   ];
   await sendMessage(chatId, lines.filter(Boolean).join("\n\n"), [...appRows(origin), ...ACTION_ROWS]);
 }

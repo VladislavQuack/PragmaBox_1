@@ -1,20 +1,12 @@
 // Абонементы: общие правила для сервера и интерфейса.
 // Занятия списываются с последнего абонемента, где они ещё остались (так же решает сервер),
 // а в карточке клиента показываем его или — если все закончились — самый свежий.
+import { plural } from "./plural";
 import type { ClientDTO, PackageDTO } from "./types";
 
 export const PACKAGE_MAX_SESSIONS = 100;
 export const PACKAGE_MAX_PRICE = 10_000_000;
 export const PACKAGE_SIZES = [4, 8, 12, 16];
-
-// 1 занятие, 2 занятия, 5 занятий, 21 занятие
-export function plural(n: number, one: string, few: string, many: string): string {
-  const mod10 = Math.abs(n) % 10;
-  const mod100 = Math.abs(n) % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-  return many;
-}
 
 export const sessionsWord = (n: number) => plural(n, "занятие", "занятия", "занятий");
 export const sessionsLabel = (n: number) => `${n} ${sessionsWord(n)}`;

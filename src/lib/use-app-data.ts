@@ -61,7 +61,7 @@ export function useAppData() {
       // Внутри Telegram без initData дальше идти бессмысленно — покажем
       // экран с кнопкой «Попробовать снова», а не вечную загрузку.
       if (!getInitData() && isTelegramEnv()) {
-        setAuthError("Telegram не передал данные. Закрой мини-апп и открой снова кнопкой бота");
+        setAuthError("Telegram не передал данные. Закройте мини-апп и откройте снова кнопкой бота");
         return;
       }
       await load();

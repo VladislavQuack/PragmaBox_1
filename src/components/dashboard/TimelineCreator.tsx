@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { api, post } from "@/lib/client-api";
 import { dayGaps, isActive, startMs } from "@/lib/analytics";
 import { activePackage, perSessionPrice } from "@/lib/packages";
+import { useBackButton } from "@/lib/back-button";
 import {
   KINDS,
   MUSCLE_GROUPS,
@@ -214,6 +215,8 @@ export default function TimelineCreator({
     setClosing(true);
     window.setTimeout(cb, 340);
   }
+  // Системная «Назад» Telegram — шаг назад, а с первого шага — закрыть мастер
+  useBackButton(!closing, back);
 
   // ───────── Выборы ─────────
   const pickClient = (c: ClientDTO) => {
@@ -763,7 +766,7 @@ function TimeStep({
   onHour: (h: number | null) => void;
   onPick: (m: number) => void;
 }) {
-  if (loading) return <p className="py-10 text-center text-sm text-[#5C6B86]">Смотрю расписание…</p>;
+  if (loading) return <p className="py-10 text-center text-sm text-[#5C6B86]">Загружаем расписание…</p>;
 
   if (hour !== null) {
     return (
@@ -1042,7 +1045,7 @@ function ReviewStep({
         className="chip-pop flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--ios-blue)] py-4 text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
       >
         <IconCheck className="h-5 w-5" />
-        {saving ? "Записываю…" : "Записать"}
+        {saving ? "Записываем…" : "Записать"}
       </button>
     </div>
   );

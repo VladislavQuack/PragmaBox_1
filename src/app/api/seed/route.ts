@@ -1,6 +1,7 @@
-import { count, eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { clients, measurements, packages, sessions } from "@/db/schema";
+import { DEMO_NOTE, isDemoClient } from "@/lib/demo";
 import { withTrainer } from "@/lib/server/auth";
 import { badRequest, parseDate } from "@/lib/server/data";
 
@@ -114,7 +115,7 @@ export function POST(req: Request) {
     for (const d of DEMO_CLIENTS) {
       const [client] = await db
         .insert(clients)
-        .values({ trainerId: trainer.id, name: d.name, phone: d.phone })
+        .values({ trainerId: trainer.id, name: d.name, phone: d.phone, note: DEMO_NOTE })
         .returning({ id: clients.id });
 
       let packageId: number | null = null;
@@ -212,5 +213,43 @@ export function POST(req: Request) {
     if (msRows.length > 0) await db.insert(measurements).values(msRows);
 
     return Response.json({ seeded: true });
+  });
+}
+
+// «Убрать демо-данные»: удаляет только демо-клиентов со всеми их записями.
+// Настоящие клиенты тренера и настройки не трогаются.
+export function DELETE(req: Request) {
+  return withTrainer(req, async (trainer) => {
+    const result = await db.transaction(async (tx) => {
+      const rows = await tx
+        .select({ id: clients.id, name: clients.name, phone: clients.phone, note: clients.note, createdAt: clients.createdAt })
+        .from(clients)
+        .where(eq(clients.trainerId, trainer.id));
+
+      const demo = rows.filter(isDemoClient);
+      // В старых демо-данных у Анны не было телефона: узнаём её по времени создания
+      // рядом с остальными демо-клиентами
+      const legacyMaria = demo.find((c) => c.name === "Мария" && c.note !== DEMO_NOTE);
+      if (legacyMaria) {
+        const anna = rows.find(
+          (c) =>
+            c.name === "Анна" &&
+            !c.phone &&
+            !c.note &&
+            Math.abs(c.createdAt.getTime() - legacyMaria.createdAt.getTime()) < 60_000,
+        );
+        if (anna) demo.push(anna);
+      }
+
+      const ids = demo.map((c) => c.id);
+      if (ids.length > 0) {
+        await tx.delete(sessions).where(and(eq(sessions.trainerId, trainer.id), inArray(sessions.clientId, ids)));
+        await tx.delete(measurements).where(and(eq(measurements.trainerId, trainer.id), inArray(measurements.clientId, ids)));
+        await tx.delete(packages).where(and(eq(packages.trainerId, trainer.id), inArray(packages.clientId, ids)));
+        await tx.delete(clients).where(and(eq(clients.trainerId, trainer.id), inArray(clients.id, ids)));
+      }
+      return { removed: ids.length, remainingClients: rows.length - ids.length };
+    });
+    return Response.json({ ok: true, ...result });
   });
 }

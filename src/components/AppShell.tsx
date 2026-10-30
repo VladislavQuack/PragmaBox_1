@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getTelegramDiagnostics, waitForTelegram, post } from "@/lib/client-api";
+import { del, getTelegramDiagnostics, waitForTelegram, post } from "@/lib/client-api";
+import { isDemoClient } from "@/lib/demo";
+import { confirmAction } from "@/lib/telegram-actions";
 import { setupTelegramShell } from "@/lib/telegram-shell";
+import { syncBackButton, useBackButton } from "@/lib/back-button";
 import { useAppData } from "@/lib/use-app-data";
 import { addDays, dayKey, fmtDayLong, fmtMoney, fmtWeekday, parseDayKey, startOfMonth } from "@/lib/time";
 import { debtSummary, incomeSummary, type Reminder } from "@/lib/analytics";
@@ -91,8 +94,8 @@ function AuthErrorScreen({
         <h1 className="mt-3 text-lg font-bold text-[#0F1C33]">{message}</h1>
         <p className="mt-2 text-sm text-[#5C6B86]">
           {inTelegram
-            ? "Telegram открыт, но данные для входа не дошли. Нажми «Попробовать снова», а если не поможет — полностью закрой мини-апп и открой его кнопкой меню бота."
-            : "Похоже, страница открыта не внутри Telegram. Открой приложение кнопкой меню бота."}
+            ? "Telegram открыт, но данные для входа не дошли. Нажмите «Попробовать снова», а если не поможет — полностью закройте мини-апп и откройте его кнопкой меню бота."
+            : "Похоже, страница открыта не внутри Telegram. Откройте приложение кнопкой меню бота."}
         </p>
         <button
           type="button"
@@ -215,6 +218,8 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
       const tg = await waitForTelegram(2500);
       if (cancelled || !tg) return;
       teardown = setupTelegramShell(tg);
+      // Шторку могли открыть до загрузки скрипта Telegram
+      syncBackButton();
     })();
     return () => {
       cancelled = true;
@@ -264,6 +269,10 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
     !onboardingPreviewOpen;
   const sheetOpen = betaOpen || installOpen;
 
+  // С вкладок «Финансы», «Клиенты» и «Профиль» «Назад» ведёт на главный экран,
+  // а с него — закрывает мини-апп, как обычно в Telegram
+  useBackButton(dashboardVisible && tab !== "day" && !tutorialOpen, () => setTab("day"), 0);
+
   // Автозапуск тура после онбординга. Если поверх открыто окно беты или установки,
   // ждём, пока его закроют, иначе подсветка окажется под ним.
   useEffect(() => {
@@ -294,13 +303,48 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
     }
   };
 
+  // Демо-клиенты в базе: показываем, что это демо, и даём убрать их одной кнопкой
+  const hasDemo = data.clients.some(isDemoClient);
+  const removeDemo = async () => {
+    const ok = await confirmAction(
+      "Демо-клиенты удалятся вместе с их тренировками, абонементами и замерами. Ваши клиенты останутся.",
+      { title: "Убрать демо-данные?", okText: "Убрать", destructive: true },
+    );
+    if (!ok) return;
+    try {
+      await del("/api/seed");
+      showToast("Демо-данные убраны");
+      setOpenClientId(null);
+      data.reload();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Не удалось убрать демо-данные");
+    }
+  };
+
   if (data.authError) {
     return <AuthErrorScreen message={data.authError} showGuides={showGuides} onRetry={data.reload} />;
   }
 
   const { now, todayKey, activeKey } = data;
   if (!now || !todayKey || !activeKey || !data.me) {
-    return <div className="grid min-h-dvh place-items-center bg-[#F1F3F9] text-sm text-[#9AA6BE]">Загрузка…</div>;
+    return (
+      <div role="status" aria-label="Загрузка" className="grid min-h-dvh place-items-center bg-[#F1F3F9]">
+        <div className="flex flex-col items-center gap-3">
+          <span className="text-[22px] font-bold tracking-[-0.02em] text-[#0F1C33]">
+            Pragma<span className="text-[#4A5BF0]">Box</span>
+          </span>
+          <span className="flex gap-1.5" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4A5BF0]"
+                style={{ animationDelay: `${i * 180}ms` }}
+              />
+            ))}
+          </span>
+        </div>
+      </div>
+    );
   }
 
   if (needsRealOnboarding || onboardingPreviewOpen) {
@@ -482,6 +526,8 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             prefs={prefs}
             onToast={showToast}
             onSeed={seedDemo}
+            hasDemo={hasDemo}
+            onRemoveDemo={removeDemo}
             onReminderNavigate={navigateReminder}
           />
         )}
@@ -520,6 +566,9 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onReload={data.reload}
             onToast={showToast}
             onSeed={seedDemo}
+            canSeed={data.clients.length === 0}
+            hasDemo={hasDemo}
+            onRemoveDemo={removeDemo}
             onOpenBeta={() => setBetaOpen(true)}
             onInstall={() => setInstallOpen(true)}
             showGuides={showGuides}

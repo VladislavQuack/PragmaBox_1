@@ -17,7 +17,7 @@ const DOTS = 6;
 export default function NextWindowWidget({ isToday, now, gap, onOpen }: NextWindowWidgetProps) {
   let title = "Ближайшее окно";
   let main = "—";
-  let sub = "Открой сегодня";
+  let sub = "только для сегодня";
   let filled = 0;
 
   if (isToday && !gap) {

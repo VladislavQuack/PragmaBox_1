@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { IconChevronLeft, IconChevronRight, IconClose } from "@/components/ui/icons";
+import { useBackButton } from "@/lib/back-button";
 import { haptic } from "@/components/dashboard/TimelineCreator";
 
 export interface TutorialStep {
@@ -139,6 +140,15 @@ export default function AppTutorial({ open, onClose, onSwitchTab }: TutorialProp
       window.removeEventListener("resize", tick);
     };
   }, [open, index, step, onSwitchTab]);
+
+  // «Назад» в Telegram — предыдущая подсказка, с первой — закрыть тур
+  useBackButton(open, () => {
+    if (index > 0) setIndex((i) => i - 1);
+    else {
+      onClose();
+      setIndex(0);
+    }
+  });
 
   if (!open) return null;
 

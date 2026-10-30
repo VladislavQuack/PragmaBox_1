@@ -144,7 +144,7 @@ export function NextExpanded({ day, sessions, now, isToday }: NextExpandedProps)
     <div className="space-y-3 pb-2">
       <div className={card}>
         <p className="text-[12px] font-medium text-[#5C6B86]">Сейчас</p>
-        <p className="mt-1 font-bold text-[#0F1C33]">{!isToday ? "Смотришь другой день" : busyNow ? "Клиент на тренировке" : "Свободен"}</p>
+        <p className="mt-1 font-bold text-[#0F1C33]">{!isToday ? "Выбран другой день" : busyNow ? "Идёт тренировка" : "Свободное время"}</p>
         <p className="mt-1 text-xs text-[#9AA6BE]">
           Рабочий день {fmtMinute(WORK_START_HOUR * 60)}–{fmtMinute(WORK_END_HOUR * 60)}
         </p>

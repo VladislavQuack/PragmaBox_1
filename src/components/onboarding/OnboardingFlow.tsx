@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react";
 import { post } from "@/lib/client-api";
 import { ONBOARDING_MAX_CLIENTS } from "@/lib/subscription";
+import { plural } from "@/lib/plural";
 import { fmtMoney } from "@/lib/time";
 import { IconCheck, IconChevronLeft, IconChevronRight, IconPlus } from "@/components/ui/icons";
 import { haptic } from "@/components/dashboard/TimelineCreator";
 import { TG_HEADER_COLOR, useTelegramHeaderColor } from "@/lib/telegram-shell";
+import { useBackButton } from "@/lib/back-button";
 import WelcomeFeatures from "./WelcomeFeatures";
 import OnboardingFinishing from "./OnboardingFinishing";
 
@@ -93,8 +95,22 @@ export default function OnboardingFlow({
 
   const firstName = trainerName.split(" ")[0] || "тренер";
 
+  // «Назад» в Telegram — предыдущий шаг настройки
+  useBackButton(step > 0 && !finishing && !saving, () => go((step - 1) as Step));
+
   if (finishing) {
-    return <OnboardingFinishing onComplete={onDone} />;
+    const count = validNames.length;
+    return (
+      <OnboardingFinishing
+        onComplete={onDone}
+        summary={[
+          `Цель — ${fmtMoney(goal)} в месяц`,
+          count > 0
+            ? `В базе ${count} ${plural(count, "клиент", "клиента", "клиентов")}`
+            : "Клиентов добавите на главном экране",
+        ]}
+      />
+    );
   }
 
   // Высота фиолетового блока меняется по шагам и анимируется плавно:
@@ -132,7 +148,7 @@ export default function OnboardingFlow({
         style={{ ...SHEET_BG, boxShadow: "0 18px 40px -24px rgba(74,91,240,0.9)" }}
       >
         <div className="flex shrink-0 items-center justify-between">
-          <span className="text-[12px] font-semibold text-white/75">Версия 0.24.RA</span>
+          <span className="text-[12px] font-semibold text-white/75">Шаг {step + 1} из 4</span>
           <div className="flex items-center gap-2" role="group" aria-label="Прогресс">
             {([0, 1, 2, 3] as Step[]).map((s) => (
               <button
@@ -160,7 +176,7 @@ export default function OnboardingFlow({
           {step === 1 && (
             <>
               <h1 className="text-[26px] font-semibold leading-[1.1] tracking-[-0.02em] text-white">
-                Сколько ты планируешь
+                Сколько вы планируете
                 <br />
                 зарабатывать?
               </h1>
@@ -249,7 +265,7 @@ export default function OnboardingFlow({
                 </div>
               </div>
               <p className="mt-2 text-[11px] leading-relaxed text-white/60">
-                Считаем от твоей месячной цели: {fmtMoney(goal)} ÷ {WORKING_DAYS_PER_MONTH} дней ÷ чек {fmtMoney(averageTicket)}.
+                Считаем от вашей месячной цели: {fmtMoney(goal)} ÷ {WORKING_DAYS_PER_MONTH} дней ÷ {fmtMoney(averageTicket)} за тренировку.
               </p>
             </>
           )}
@@ -257,9 +273,9 @@ export default function OnboardingFlow({
           {step === 3 && (
             <>
               <h1 className="text-[26px] font-semibold leading-[1.1] tracking-[-0.02em] text-white">
-                Давай создадим
+                Добавим первых
                 <br />
-                базу клиентов
+                клиентов
               </h1>
               <div className="mt-3 space-y-2.5">
                 {names.map((name, i) => (
@@ -358,7 +374,7 @@ export default function OnboardingFlow({
                 className="group flex min-w-0 items-center gap-3 disabled:opacity-60"
               >
                 <span className="min-w-0 truncate text-[14px] font-semibold text-white">
-                  {saving ? "Сохраняю…" : step === 3 ? (preview ? "Открыть демо-дашборд" : "Открыть дашборд") : "Дальше"}
+                  {saving ? "Сохраняем…" : step === 3 ? (preview ? "Открыть демо-дашборд" : "Открыть дашборд") : "Дальше"}
                 </span>
                 <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full border-2 border-white text-white transition group-active:scale-90">
                   <IconChevronRight className="h-5 w-5" />

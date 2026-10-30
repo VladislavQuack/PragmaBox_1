@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ApiError, post } from "@/lib/client-api";
 import { clientLimitForTier } from "@/lib/subscription";
+import { useBackButton } from "@/lib/back-button";
 import { debtSummary, startMs } from "@/lib/analytics";
 import { buildSeries, latestWithDelta, metricDef } from "@/lib/metrics";
 import { currentPackage } from "@/lib/packages";
@@ -61,6 +62,7 @@ export default function ClientsTab({
   const [draft, setDraft] = useState<PackageDraft>(() => newPackageDraft({ today: now, perSession: defaultPrice }));
 
   const debts = useMemo(() => debtSummary(history, clients), [history, clients]);
+  useBackButton(adding, () => setAdding(false));
 
   const rows = useMemo(() => {
     const todayTs = now.getTime();

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { del, patch, post } from "@/lib/client-api";
 import { confirmAction, downloadFile } from "@/lib/telegram-actions";
+import { useBackButton } from "@/lib/back-button";
 import { debtSummary, debtorDetails, startMs } from "@/lib/analytics";
 import {
   METRICS,
@@ -69,6 +70,10 @@ export default function ClientDetail({
   const [historyOpen, setHistoryOpen] = useState<boolean | null>(null);
   const confirmRef = useRef<HTMLElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // «Назад» сначала закрывает форму или подтверждение удаления, потом — саму карточку
+  useBackButton(mode.kind !== "view", () => setMode({ kind: "view" }));
+  useBackButton(confirmDelete && !deleting, () => setConfirmDelete(false));
 
   // Форма открывается вместо карточки — показываем её с начала, а не с середины
   useEffect(() => {

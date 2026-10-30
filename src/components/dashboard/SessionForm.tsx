@@ -213,7 +213,7 @@ export default function SessionForm({
         disabled={saving}
         className="w-full rounded-2xl bg-gradient-to-br from-[#4A5BF0] to-[#3D4EDB] py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#F04452]/30 disabled:opacity-60"
       >
-        {saving ? "Сохраняю…" : editing ? "Сохранить" : "Записать"}
+        {saving ? "Сохраняем…" : editing ? "Сохранить" : "Записать"}
       </button>
     </div>
   );

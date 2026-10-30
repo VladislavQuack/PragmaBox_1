@@ -62,6 +62,10 @@ interface SettingsPanelProps {
   onReload: () => void;
   onToast: (msg: string) => void;
   onSeed: () => void;
+  // Демо можно загрузить только в пустую базу, а убрать — когда демо-клиенты есть
+  canSeed: boolean;
+  hasDemo: boolean;
+  onRemoveDemo: () => void;
   // Повтор тура по приложению (сам он запускается после онбординга)
   onStartTutorial?: () => void;
   onOpenBeta?: () => void;
@@ -85,6 +89,9 @@ export default function SettingsPanel({
   onReload,
   onToast,
   onSeed,
+  canSeed,
+  hasDemo,
+  onRemoveDemo,
   onStartTutorial,
   onOpenBeta,
   onInstall,
@@ -166,13 +173,34 @@ export default function SettingsPanel({
         </section>
       )}
 
-      <section className="space-y-2">
-        <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Демо</p>
-        <button type="button" onClick={onSeed} className="w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-[#0F1C33] shadow-sm">
-          Загрузить демо-данные
-          <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">Работает только если база пустая</span>
-        </button>
-      </section>
+      {(canSeed || hasDemo) && (
+        <section className="space-y-2">
+          <p className="px-1 text-xs font-semibold uppercase tracking-wide text-[#5C6B86]">Демо</p>
+          {hasDemo ? (
+            <button
+              type="button"
+              onClick={onRemoveDemo}
+              className="w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-[#F04452] shadow-sm"
+            >
+              Убрать демо-данные
+              <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">
+                Удалятся только демо-клиенты, ваши останутся
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onSeed}
+              className="w-full rounded-2xl bg-white p-4 text-left text-sm font-semibold text-[#0F1C33] shadow-sm"
+            >
+              Загрузить демо-данные
+              <span className="mt-0.5 block text-xs font-normal text-[#5C6B86]">
+                Пять клиентов с расписанием и оплатами — чтобы посмотреть приложение в деле
+              </span>
+            </button>
+          )}
+        </section>
+      )}
 
       {/* Обычная белая карточка, как остальные пункты профиля: тур и так показывается
           после онбординга, а здесь его можно открыть ещё раз */}
