@@ -219,15 +219,20 @@ export default function TimelineCreator({
   useBackButton(!closing, back);
 
   // ───────── Выборы ─────────
-  const pickClient = (c: ClientDTO) => {
-    if (c.id !== clientId) {
-      // У другого клиента может не быть абонемента — способ оплаты выбираем заново
+  // Выбрали «По абонементу», а потом клиента без абонемента — способ оплаты спрашиваем заново,
+  // а не подставляем молча
+  const continueAfterClient = (hasPackage: boolean) => {
+    if (byPackage && !hasPackage) {
       setByPackage(false);
       setPaid(null);
+      if (reachedReview) return go(idx("pay"), "fwd");
     }
+    next();
+  };
+  const pickClient = (c: ClientDTO) => {
     setClientId(c.id);
     setNewMode(false);
-    next();
+    continueAfterClient(activePackage(c) !== null);
   };
   const pickKind = (k: KindKey) => {
     setKind(k);
@@ -372,8 +377,7 @@ export default function TimelineCreator({
               onNewName={setNewName}
               onNext={() => {
                 setClientId(null);
-                setByPackage(false);
-                next();
+                continueAfterClient(false);
               }}
             />
           )}
