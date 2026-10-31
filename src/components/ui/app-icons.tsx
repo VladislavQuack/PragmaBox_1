@@ -2,6 +2,7 @@ import Image, { type StaticImageData } from "next/image";
 
 import clientsGray from "./Icons/Clients_Gray.svg";
 import clientsPurple from "./Icons/Clients_Purple.svg";
+import daySummary from "./Icons/Day_Summary.svg";
 import financesGray from "./Icons/Finances_Gray.svg";
 import financesPurple from "./Icons/Finances_Purple.svg";
 import financesWidget from "./Icons/Finances_Widget.svg";
@@ -11,6 +12,7 @@ import nextWindow from "./Icons/Next_Window.svg";
 import notes from "./Icons/Notes_new.svg";
 import settingsGray from "./Icons/Setting_Gray.svg";
 import settingsPurple from "./Icons/Settings_Purple.svg";
+import week from "./Icons/Week.svg";
 
 // Иконки приложения из SVG-файлов в ./Icons. Чтобы поменять иконку,
 // достаточно заменить файл с тем же именем.
@@ -26,10 +28,12 @@ export const NAV_ICONS: Record<"finance" | "day" | "clients" | "profile", IconPa
 };
 
 // Белые глифы для цветных плашек виджетов на дашборде.
-export const WIDGET_ICONS: Record<"finance" | "nextWindow" | "reminders", StaticImageData> = {
+export const WIDGET_ICONS: Record<"finance" | "nextWindow" | "reminders" | "daySummary" | "week", StaticImageData> = {
   finance: financesWidget,
   nextWindow,
   reminders: notes,
+  daySummary,
+  week,
 };
 
 // Иконка-картинка. alt пустой: рядом с иконками всегда есть подпись.
