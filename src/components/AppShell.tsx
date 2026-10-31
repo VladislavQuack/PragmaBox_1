@@ -7,7 +7,7 @@ import { confirmAction } from "@/lib/telegram-actions";
 import { setupTelegramShell } from "@/lib/telegram-shell";
 import { syncBackButton, useBackButton } from "@/lib/back-button";
 import { useAppData } from "@/lib/use-app-data";
-import { addDays, dayKey, fmtDayLong, fmtMoney, fmtWeekday, parseDayKey, startOfMonth } from "@/lib/time";
+import { addDays, dayKey, fmtDayLong, fmtMoney, fmtWeekday, parseDayKey, startOfMonth, startOfWeek } from "@/lib/time";
 import { debtSummary, incomeSummary, type Reminder } from "@/lib/analytics";
 import Sheet from "@/components/ui/Sheet";
 import LottiePlayer from "@/components/ui/LottiePlayer";
@@ -53,8 +53,6 @@ function storedTutorialPending(): boolean {
     return false;
   }
 }
-
-const startOfWeek = (d: Date) => addDays(d, -((d.getDay() + 6) % 7));
 
 const initialsOf = (name?: string) =>
   (name ?? "")

@@ -12,10 +12,15 @@ export interface WidgetPrefs {
   income: boolean;
   next: boolean;
   reminders: boolean;
+  // Под таймлайном
+  summary: boolean;
+  week: boolean;
 }
 
 const STORAGE_KEY = "trainer-dashboard-prefs-v1";
-export const DEFAULT_PREFS: WidgetPrefs = { income: true, next: true, reminders: true };
+// Новые виджеты включены и у тех, кто уже настраивал дашборд: сохранённые настройки
+// накладываются поверх этих значений
+export const DEFAULT_PREFS: WidgetPrefs = { income: true, next: true, reminders: true, summary: true, week: true };
 
 // Настройки видимости виджетов хранятся на устройстве
 export function useWidgetPrefs(): [WidgetPrefs, (p: WidgetPrefs) => void] {
@@ -76,9 +81,11 @@ interface SettingsPanelProps {
 }
 
 const WIDGETS: { key: keyof WidgetPrefs; title: string; hint: string }[] = [
-  { key: "income", title: "Доход", hint: "Сумма за день и план" },
+  { key: "income", title: "Доход", hint: "Сумма за месяц и план" },
   { key: "next", title: "Ближайшее окно", hint: "Когда перерыв и сколько он длится" },
   { key: "reminders", title: "Напоминания", hint: "Долги, абонементы, окончания" },
+  { key: "summary", title: "Итоги дня", hint: "Сколько проведено и заработано за день" },
+  { key: "week", title: "Неделя", hint: "Тренировки по дням и сравнение с прошлой неделей" },
 ];
 
 export default function SettingsPanel({

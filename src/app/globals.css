@@ -168,6 +168,12 @@ body {
 .card-tint-amber {
   background: linear-gradient(155deg, #ffffff 42%, #fff1d9 100%);
 }
+.card-tint-teal {
+  background: linear-gradient(155deg, #ffffff 42%, #dcf5f8 100%);
+}
+.card-tint-violet {
+  background: linear-gradient(155deg, #ffffff 42%, #ece9ff 100%);
+}
 .chip-green {
   background: linear-gradient(135deg, #5be3a3 0%, #1db871 100%);
   color: #fff;
@@ -185,6 +191,17 @@ body {
   background: linear-gradient(135deg, #ffc968 0%, #ff9f0a 100%);
   color: #fff;
   box-shadow: 0 8px 16px -8px rgba(255, 159, 10, 0.75);
+}
+/* Плашки иконок новых виджетов под таймлайном */
+.chip-teal {
+  background: linear-gradient(135deg, #5ed8e8 0%, #13a7c0 100%);
+  color: #fff;
+  box-shadow: 0 8px 16px -8px rgba(19, 167, 192, 0.75);
+}
+.chip-violet {
+  background: linear-gradient(135deg, #b0a6ff 0%, #7a6ff0 100%);
+  color: #fff;
+  box-shadow: 0 8px 16px -8px rgba(122, 111, 240, 0.75);
 }
 .bar-grad {
   background-color: #4a5bf0;

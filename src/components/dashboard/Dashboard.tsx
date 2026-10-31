@@ -12,6 +12,8 @@ import TimelineWidget from "./TimelineWidget";
 import IncomeWidget from "./IncomeWidget";
 import NextWindowWidget from "./NextWindowWidget";
 import RemindersWidget from "./RemindersWidget";
+import DaySummaryWidget from "./DaySummaryWidget";
+import WeekWidget from "./WeekWidget";
 import SessionActions from "./SessionActions";
 import SessionForm from "./SessionForm";
 import TimelineCreator, { haptic, type CreatorOrigin } from "./TimelineCreator";
@@ -275,6 +277,35 @@ export default function DayTab({
           }
         />
       </div>
+
+      {/* Под таймлайном — итоги дня и неделя. Главный экран листается как лента карточек,
+          а не на пару сантиметров, будто что-то не поместилось. */}
+      {(prefs.summary || prefs.week) && (
+        <div className={`flex shrink-0 flex-col gap-2 ${isFirstEntry ? "dash-enter-item dash-enter-4" : ""}`}>
+          {prefs.summary && (
+            <div data-tutorial="day-summary-widget">
+              <DaySummaryWidget
+                day={day}
+                sessions={daySessions}
+                isToday={isToday}
+                now={now}
+                onOpen={() => setPanel("timeline")}
+              />
+            </div>
+          )}
+          {prefs.week && (
+            <div data-tutorial="week-widget">
+              <WeekWidget
+                day={day}
+                todayKey={todayKey}
+                history={history}
+                now={now}
+                onPickDay={(key) => data.setViewKey(key === todayKey ? null : key)}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       <Sheet open={panel === "timeline"} onClose={() => setPanel(null)} title="Расписание" bare>
         <VerticalTimelineExpanded

@@ -23,6 +23,11 @@ export function startOfMonth(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
+// Понедельник недели, в которую попадает день
+export function startOfWeek(d: Date): Date {
+  return addDays(d, -((d.getDay() + 6) % 7));
+}
+
 // Момент дня: minute = минуты от полуночи
 export function atMinute(day: Date, minute: number): Date {
   return new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, minute);
