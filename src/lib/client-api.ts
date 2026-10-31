@@ -34,6 +34,8 @@ export interface TgWebApp {
   downloadFile?: (params: { url: string; file_name: string }, cb?: (accepted: boolean) => void) => void;
   openLink?: (url: string) => void;
   openTelegramLink?: (url: string) => void;
+  // Bot API 6.1+: окно оплаты счёта (в том числе звёздами) поверх мини-аппа
+  openInvoice?: (url: string, cb?: (status: InvoiceStatus) => void) => void;
   // Bot API 6.2+: родное окно с кнопками вместо системного confirm() браузера
   showPopup?: (params: TgPopupParams, cb?: (buttonId: string) => void) => void;
   // Bot API 6.1+: системная кнопка «Назад» в шапке Telegram (и аппаратная «Назад» на Android)
@@ -52,6 +54,12 @@ export interface TgWebApp {
 }
 
 export type HomeScreenStatus = "unsupported" | "unknown" | "added" | "missed";
+
+// paid — оплачено, cancelled — закрыли окно, failed — не прошло, pending — оплата обрабатывается
+export type InvoiceStatus = "paid" | "cancelled" | "failed" | "pending";
+
+// Сервер ответил «лимит Free»: AppShell показывает экран Premium, откуда бы ни добавляли клиента
+export const CLIENT_LIMIT_EVENT = "pragmabox:client-limit";
 
 export interface TgPopupParams {
   title?: string;
@@ -206,6 +214,9 @@ async function request<T>(url: string, method: string, body?: unknown): Promise<
       typeof data === "object" && data !== null && "code" in data
         ? String((data as { code: unknown }).code)
         : undefined;
+    if (code === "FREE_CLIENT_LIMIT" && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(CLIENT_LIMIT_EVENT));
+    }
     throw new ApiError(message, res.status, code);
   }
   return data as T;

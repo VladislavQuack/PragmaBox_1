@@ -156,3 +156,47 @@ export const referrals = pgTable(
   },
   (t) => [index("referrals_inviter_idx").on(t.inviterId)],
 );
+
+// ───────── Premium: пробный период, оплаты звёздами Telegram ─────────
+// Тоже отдельные таблицы: пока SQL не выполнен, приложение работает как раньше,
+// а лимит клиентов не включается ни у кого (см. src/lib/server/premium.ts).
+
+// Срок Premium тренера. Одна строка на тренера: пробный период, оплаты и бонусы беты
+// только сдвигают active_until вперёд.
+export const premium = pgTable("premium", {
+  trainerId: integer("trainer_id")
+    .primaryKey()
+    .references(() => trainers.id, { onDelete: "cascade" }),
+  // Premium действует, пока это время не наступило
+  activeUntil: timestamp("active_until", { withTimezone: true, mode: "date" }),
+  // Когда выдан пробный период. Выдаётся один раз
+  trialStartedAt: timestamp("trial_started_at", { withTimezone: true, mode: "date" }),
+  // Сколько бонусных месяцев беты уже добавлено к сроку
+  bonusMonths: integer("bonus_months").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
+});
+
+// Счета и оплаты. Строка появляется, когда тренер открыл оплату (pending),
+// становится paid после оплаты и refunded после возврата звёзд.
+export const payments = pgTable(
+  "payments",
+  {
+    id: serial("id").primaryKey(),
+    // Тренер мог удалить аккаунт — запись об оплате остаётся
+    trainerId: integer("trainer_id").references(() => trainers.id, { onDelete: "set null" }),
+    // Telegram ID покупателя: нужен для возврата звёзд
+    tgId: text("tg_id").notNull(),
+    // month / year / test (см. PLANS в src/lib/subscription.ts)
+    plan: text("plan").notNull(),
+    stars: integer("stars").notNull(),
+    months: integer("months").notNull().default(0),
+    days: integer("days").notNull().default(0),
+    status: text("status").notNull().default("pending"),
+    // telegram_payment_charge_id — по нему Telegram возвращает звёзды
+    chargeId: text("charge_id").unique(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
+    paidAt: timestamp("paid_at", { withTimezone: true, mode: "date" }),
+    refundedAt: timestamp("refunded_at", { withTimezone: true, mode: "date" }),
+  },
+  (t) => [index("payments_trainer_idx").on(t.trainerId), index("payments_status_idx").on(t.status)],
+);

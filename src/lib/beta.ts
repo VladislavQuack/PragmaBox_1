@@ -1,8 +1,10 @@
 // Бета-тест: все функции бесплатны, а за помощь проекту тренер получает Premium
 // после запуска платной версии. Условия меняются здесь — бот и приложение берут их отсюда.
 
-// true — лимита клиентов нет ни у кого. Когда бета закончится, поставь false.
-export const BETA = true;
+// true — идёт бета: лимита клиентов нет ни у кого, Premium видит и может проверить только владелец.
+// false — запуск: лимит Free, 14 дней Premium бесплатно, оплата звёздами для всех,
+// а бонусы беты сами добавятся к сроку Premium. Перед этим выполни sql/2026-11-premium.sql.
+export const BETA: boolean = true;
 
 // Бонусы складываются: отзыв + приглашённый друг = 18 месяцев Premium.
 export const REVIEW_BONUS_MONTHS = 6;
@@ -42,8 +44,8 @@ export const SHARE_TEXT =
   "Попробуй PragmaBox — расписание, клиенты и оплаты тренера прямо в Telegram. Сейчас бета, всё бесплатно 👇";
 
 // Окно «Поделиться» Telegram: друг выбирает чат, ссылка уходит с текстом.
-export const shareUrl = (link: string) =>
-  `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(SHARE_TEXT)}`;
+export const shareUrl = (link: string, text: string = SHARE_TEXT) =>
+  `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
 
 // 1 месяц, 2 месяца, 6 месяцев, 12 месяцев, 18 месяцев
 export function monthsLabel(n: number): string {

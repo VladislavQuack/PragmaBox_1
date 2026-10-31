@@ -2,9 +2,10 @@ import { count, eq } from "drizzle-orm";
 import { after } from "next/server";
 import { db } from "@/db";
 import { clients, trainers } from "@/db/schema";
-import { ONBOARDING_MAX_CLIENTS, clientLimitForTier } from "@/lib/subscription";
+import { ONBOARDING_MAX_CLIENTS } from "@/lib/subscription";
 import { withTrainer } from "@/lib/server/auth";
 import { onTrainerActivated } from "@/lib/server/beta";
+import { clientLimitForTrainer } from "@/lib/server/premium";
 import { badRequest, toInt, toText } from "@/lib/server/data";
 
 export const dynamic = "force-dynamic";
@@ -22,14 +23,14 @@ export function POST(req: Request) {
       return badRequest(`На первом запуске можно добавить не больше ${ONBOARDING_MAX_CLIENTS} клиентов.`);
     }
 
-    const limit = clientLimitForTier(trainer.subscriptionTier);
+    const limit = await clientLimitForTrainer(trainer);
     const [{ value: existing }] = await db
       .select({ value: count() })
       .from(clients)
       .where(eq(clients.trainerId, trainer.id));
 
     if (limit !== null && Number(existing) + names.length > limit) {
-      return badRequest(`Бесплатный план позволяет вести до ${limit} клиентов.`);
+      return badRequest(`Бесплатно можно вести до ${limit} клиентов. С Premium — без лимита.`);
     }
 
     await db.transaction(async (tx) => {

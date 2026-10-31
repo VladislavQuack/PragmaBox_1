@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { trainers } from "@/db/schema";
+import { payments, premium, trainers } from "@/db/schema";
 import { sql } from "drizzle-orm";
+import { BETA } from "@/lib/beta";
 
 export const dynamic = "force-dynamic";
 
@@ -55,10 +56,26 @@ export async function GET() {
     );
   }
 
+  // 3. Таблицы Premium (sql/2026-11-premium.sql). Без них приложение работает, но оплата недоступна
+  let premiumTables = true;
+  try {
+    await Promise.all([
+      db.select({ id: premium.trainerId }).from(premium).limit(0),
+      db.select({ id: payments.id }).from(payments).limit(0),
+    ]);
+  } catch {
+    premiumTables = false;
+  }
+
   return Response.json({
     ok: true,
     database: true,
     schema: true,
+    beta: BETA,
+    premiumTables,
+    ...(premiumTables
+      ? {}
+      : { hint: "Нет таблиц Premium: выполни sql/2026-11-premium.sql в Neon → SQL Editor, иначе оплата не заработает" }),
     nodeEnv: process.env.NODE_ENV,
     isVercel: Boolean(process.env.VERCEL),
   });

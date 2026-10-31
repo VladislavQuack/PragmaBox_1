@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { db } from "@/db";
 import { feedback, referrals, rewards, trainers } from "@/db/schema";
 import {
+  BETA,
   MAX_REVIEW_LENGTH,
   MIN_REVIEW_LENGTH,
   REFERRAL_BONUS_MONTHS,
@@ -65,19 +66,22 @@ export interface ReviewResult {
 }
 
 // Отзыв сохраняем всегда, а бонус — один раз и только за развёрнутый текст.
+// Бонусы — программа беты: после неё отзывы просто доходят до разработчика.
 export async function submitReview(trainer: Trainer, rawText: string, source: "bot" | "app"): Promise<ReviewResult> {
   const text = rawText.trim().slice(0, MAX_REVIEW_LENGTH);
   await db.insert(feedback).values({ trainerId: trainer.id, kind: "review", text, source });
 
   const tooShort = text.length < MIN_REVIEW_LENGTH;
-  const rewarded = tooShort ? false : await grantReward(trainer.id, "review", REVIEW_BONUS_MONTHS);
-  const alreadyRewarded = rewarded ? false : await hasReward(trainer.id, "review");
+  const rewarded = tooShort || !BETA ? false : await grantReward(trainer.id, "review", REVIEW_BONUS_MONTHS);
+  const alreadyRewarded = rewarded || !BETA ? false : await hasReward(trainer.id, "review");
 
-  const status = rewarded
-    ? `начислено ${monthsLabel(REVIEW_BONUS_MONTHS)}`
-    : alreadyRewarded
-      ? "бонус уже был"
-      : "коротко, без бонуса";
+  const status = !BETA
+    ? "после беты, без бонуса"
+    : rewarded
+      ? `начислено ${monthsLabel(REVIEW_BONUS_MONTHS)}`
+      : alreadyRewarded
+        ? "бонус уже был"
+        : "коротко, без бонуса";
   const where = source === "app" ? "из приложения" : "в боте";
   // Владельцу — после ответа пользователю, чтобы не задерживать его
   after(() =>
@@ -108,7 +112,7 @@ export async function recordReferral(invitee: Trainer, inviterId: number): Promi
 }
 
 // Тренер прошёл первую настройку. Если его пригласили — пригласивший получает бонус
-// (один раз, за первого друга), а владелец узнаёт о новом пользователе.
+// (один раз, за первого друга; только пока идёт бета), а владелец узнаёт о новом пользователе.
 export async function onTrainerActivated(trainer: Trainer, clientCount: number) {
   let inviter: Trainer | null = null;
   let granted = false;
@@ -122,7 +126,7 @@ export async function onTrainerActivated(trainer: Trainer, clientCount: number) 
       [inviter] = await db.select().from(trainers).where(eq(trainers.id, ref.inviterId)).limit(1);
     }
     if (inviter) {
-      granted = await grantReward(inviter.id, "referral", REFERRAL_BONUS_MONTHS);
+      granted = BETA ? await grantReward(inviter.id, "referral", REFERRAL_BONUS_MONTHS) : false;
       const chatId = chatIdOf(inviter);
       const name = escapeHtml(trainer.name);
       if (chatId) {

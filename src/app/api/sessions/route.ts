@@ -2,7 +2,7 @@ import { and, desc, eq, gt, gte, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { clients, packages, sessions } from "@/db/schema";
 import { isKindKey, isMuscleKey } from "@/lib/config";
-import { clientLimitForTier } from "@/lib/subscription";
+import { clientLimitForTrainer } from "@/lib/server/premium";
 import { withTrainer } from "@/lib/server/auth";
 import {
   badRequest,
@@ -47,7 +47,7 @@ export function POST(req: Request) {
     } else {
       const name = toText(body.newClientName);
       if (!name) return badRequest("Выберите клиента или введите имя нового");
-      const limit = clientLimitForTier(trainer.subscriptionTier);
+      const limit = await clientLimitForTrainer(trainer);
       if (limit !== null && (await countTrainerClients(trainer.id)) >= limit) {
         return clientLimitResponse(limit);
       }
