@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { IconChevronLeft, IconChevronRight, IconClose } from "@/components/ui/icons";
 import { useBackButton } from "@/lib/back-button";
+import { BETA } from "@/lib/beta";
 import { haptic } from "@/components/dashboard/TimelineCreator";
 
 export interface TutorialStep {
@@ -67,7 +68,7 @@ const STEPS: TutorialStep[] = [
     badge: "Шаг 7 из 7",
     title: "Финансы, клиенты и профиль",
     description:
-      "Снизу четыре вкладки: «День» (главный экран), «Финансы» (круговая диаграмма, все долги списком), «Клиенты» (поиск клиентов, абонементы и замеры веса с графиками прогресса) и «Профиль» (бета-бонусы, установка на главный экран, виджеты дашборда и повтор обучения).",
+      `Снизу четыре вкладки: «День» (главный экран), «Финансы» (круговая диаграмма, все долги списком), «Клиенты» (поиск клиентов, абонементы и замеры веса с графиками прогресса) и «Профиль» (${BETA ? "бета-бонусы" : "Premium"}, установка на главный экран, виджеты дашборда и повтор обучения).`,
   },
 ];
 

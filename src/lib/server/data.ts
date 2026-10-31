@@ -144,7 +144,7 @@ export async function countTrainerClients(trainerId: number): Promise<number> {
 export function clientLimitResponse(limit: number) {
   return Response.json(
     {
-      error: `На бесплатном плане можно вести до ${limit} клиентов.`,
+      error: `Бесплатно можно вести до ${limit} клиентов. С Premium — без лимита.`,
       code: "FREE_CLIENT_LIMIT",
       limit,
     },

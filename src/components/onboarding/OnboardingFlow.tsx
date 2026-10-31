@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { post } from "@/lib/client-api";
-import { ONBOARDING_MAX_CLIENTS } from "@/lib/subscription";
+import { BETA } from "@/lib/beta";
+import { ONBOARDING_MAX_CLIENTS, TRIAL_DAYS } from "@/lib/subscription";
 import { plural } from "@/lib/plural";
 import { fmtMoney } from "@/lib/time";
 import { IconCheck, IconChevronLeft, IconChevronRight, IconPlus } from "@/components/ui/icons";
@@ -315,7 +316,9 @@ export default function OnboardingFlow({
                 <div className="rounded-2xl bg-white/14 p-3.5">
                   <p className="text-[14px] font-bold">Клиентов больше трёх?</p>
                   <p className="mt-1 text-[12px] leading-relaxed text-white/78">
-                    Остальных добавите уже в приложении: идёт бета, лимита нет и все функции бесплатны.
+                    {BETA
+                      ? "Остальных добавите уже в приложении: идёт бета, лимита нет и все функции бесплатны."
+                      : `Остальных добавите уже в приложении: первые ${TRIAL_DAYS} дней Premium бесплатно, клиентов — без лимита.`}
                   </p>
                   {onBeta && (
                     <button

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ApiError, api, getInitData, isTelegramEnv, waitForInitData } from "@/lib/client-api";
 import { addDays, dayKey, parseDayKey } from "@/lib/time";
 import type { ClientDTO, MeasurementDTO, SessionDTO } from "@/lib/types";
+import type { PremiumInfo } from "@/lib/subscription";
 
 export interface TrainerInfo {
   id: number;
@@ -16,6 +17,7 @@ export interface TrainerInfo {
   monthlyGoal: number;
   avgSessionPrice: number;
   onboardingComplete: boolean;
+  premium: PremiumInfo;
 }
 
 const encode = (d: Date) => encodeURIComponent(d.toISOString());
@@ -150,6 +152,11 @@ export function useAppData() {
     }
   }, []);
 
+  // Premium включился после оплаты — показываем сразу, не перезагружая всё
+  const setPremium = useCallback((premium: PremiumInfo) => {
+    setMe((prev) => (prev ? { ...prev, premium } : prev));
+  }, []);
+
   return {
     now,
     todayKey,
@@ -169,6 +176,7 @@ export function useAppData() {
     optimisticDeleteSession,
     optimisticUpdatePackage,
     optimisticDeleteClient,
+    setPremium,
   };
 }
 

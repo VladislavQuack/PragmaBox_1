@@ -1,25 +1,50 @@
 // Настройка бота без ручных шагов: адрес вебхука, меню команд и описание.
 // Запускается сама при открытии приложения на проде; проверить вручную — /api/telegram/setup.
+import { BETA } from "@/lib/beta";
+import { FREE_CLIENT_LIMIT, TRIAL_DAYS } from "@/lib/subscription";
 import { appOrigin, botInfo, botToken, tgCall, webhookSecret } from "@/lib/server/telegram";
 
-export const BOT_COMMANDS = [
-  { command: "start", description: "Главное меню" },
-  { command: "app", description: "Открыть PragmaBox" },
-  { command: "install", description: "Установить на главный экран" },
-  { command: "review", description: "Оставить отзыв — 6 месяцев Premium" },
-  { command: "invite", description: "Пригласить друга — 12 месяцев Premium" },
-  { command: "bonus", description: "Мои бонусы" },
-  { command: "help", description: "Помощь" },
-];
+// Меню команд. В бете — бонусы за помощь, после неё — Premium и всё, что положено боту с оплатой:
+// условия (/terms) и помощь с оплатой (/paysupport). Сами команды работают в обоих режимах.
+export const BOT_COMMANDS = BETA
+  ? [
+      { command: "start", description: "Главное меню" },
+      { command: "app", description: "Открыть PragmaBox" },
+      { command: "install", description: "Установить на главный экран" },
+      { command: "review", description: "Оставить отзыв — 6 месяцев Premium" },
+      { command: "invite", description: "Пригласить друга — 12 месяцев Premium" },
+      { command: "bonus", description: "Мои бонусы" },
+      { command: "help", description: "Помощь" },
+    ]
+  : [
+      { command: "start", description: "Главное меню" },
+      { command: "app", description: "Открыть PragmaBox" },
+      { command: "premium", description: "Premium — клиенты без лимита" },
+      { command: "install", description: "Установить на главный экран" },
+      { command: "review", description: "Оставить отзыв" },
+      { command: "invite", description: "Пригласить друга" },
+      { command: "terms", description: "Условия Premium" },
+      { command: "paysupport", description: "Помощь с оплатой" },
+      { command: "help", description: "Помощь" },
+    ];
 
 // Описание видно в пустом чате до нажатия «Start». Ставим, только если владелец
-// ещё не написал своё в BotFather.
-const DESCRIPTION =
+// ещё не написал своё в BotFather. Описание беты, которое бот поставил сам, после беты заменяем.
+const BETA_DESCRIPTION =
   "PragmaBox — рабочий кабинет персонального тренера в Telegram: расписание, клиенты, абонементы, оплаты и замеры.\n\n" +
   "Сейчас идёт бета: все функции бесплатно, а за отзыв и приглашённых друзей — Premium после запуска.";
-const SHORT_DESCRIPTION = "Расписание, клиенты и оплаты тренера. Сейчас бета — всё бесплатно.";
+const BETA_SHORT_DESCRIPTION = "Расписание, клиенты и оплаты тренера. Сейчас бета — всё бесплатно.";
+const LAUNCH_DESCRIPTION =
+  "PragmaBox — рабочий кабинет персонального тренера в Telegram: расписание, клиенты, абонементы, оплаты и замеры.\n\n" +
+  `Первые ${TRIAL_DAYS} дней — Premium бесплатно: клиенты без лимита. Дальше — бесплатно до ${FREE_CLIENT_LIMIT} клиентов или Premium за звёзды Telegram.`;
+const LAUNCH_SHORT_DESCRIPTION = `Расписание, клиенты и оплаты тренера. ${TRIAL_DAYS} дней Premium бесплатно.`;
+const DESCRIPTION = BETA ? BETA_DESCRIPTION : LAUNCH_DESCRIPTION;
+const SHORT_DESCRIPTION = BETA ? BETA_SHORT_DESCRIPTION : LAUNCH_SHORT_DESCRIPTION;
+// Своё описание владельца не трогаем, а пустое или наше старое — обновляем
+const replaceable = (current: string, ours: string[]) => !current || ours.includes(current);
 
-const UPDATES = ["message", "callback_query"];
+// pre_checkout_query — вопрос Telegram перед списанием звёзд; без него оплата не пройдёт
+const UPDATES = ["message", "callback_query", "pre_checkout_query"];
 
 export interface BotSetupResult {
   ok: boolean;
@@ -69,12 +94,15 @@ export async function ensureBotSetup(): Promise<BotSetupResult> {
     changed.push("commands");
   }
   const { description } = await tgCall<{ description: string }>("getMyDescription");
-  if (!description) {
+  if (description !== DESCRIPTION && replaceable(description, [BETA_DESCRIPTION, LAUNCH_DESCRIPTION])) {
     await tgCall("setMyDescription", { description: DESCRIPTION });
     changed.push("description");
   }
   const { short_description } = await tgCall<{ short_description: string }>("getMyShortDescription");
-  if (!short_description) {
+  if (
+    short_description !== SHORT_DESCRIPTION &&
+    replaceable(short_description, [BETA_SHORT_DESCRIPTION, LAUNCH_SHORT_DESCRIPTION])
+  ) {
     await tgCall("setMyShortDescription", { short_description: SHORT_DESCRIPTION });
     changed.push("short_description");
   }

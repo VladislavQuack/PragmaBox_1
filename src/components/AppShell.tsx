@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { del, getTelegramDiagnostics, waitForTelegram, post } from "@/lib/client-api";
+import { CLIENT_LIMIT_EVENT, del, getTelegramDiagnostics, waitForTelegram, post } from "@/lib/client-api";
 import { isDemoClient } from "@/lib/demo";
 import { confirmAction } from "@/lib/telegram-actions";
 import { setupTelegramShell } from "@/lib/telegram-shell";
@@ -23,7 +23,9 @@ import AppTutorial from "@/components/tutorial/AppTutorial";
 import OnboardingFlow from "@/components/onboarding/OnboardingFlow";
 import BetaSheet from "@/components/beta/BetaSheet";
 import InstallSheet from "@/components/beta/InstallSheet";
-import { planLabel } from "@/lib/subscription";
+import PremiumSheet from "@/components/premium/PremiumSheet";
+import { BETA } from "@/lib/beta";
+import { clientLimit, planLabel } from "@/lib/subscription";
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -205,6 +207,8 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   const [betaOpen, setBetaOpen] = useState(false);
   // Окно установки: кнопка «Установить на телефон» в боте (адрес с ?install=1) или карточка в профиле
   const [installOpen, setInstallOpen] = useState(false);
+  // Экран Premium: карточка в профиле, лимит клиентов, кнопка в боте (адрес с ?premium=1)
+  const [premiumOpen, setPremiumOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   // Онбординг только что пройден: как только появится дашборд, запускаем тур
   const [tutorialPending, setTutorialPending] = useState(false);
@@ -230,11 +234,27 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    const wantsInstall = params.get("install") === "1" || hash.get("tgWebAppStartParam") === "install";
-    if (!wantsInstall) return;
+    const startParam = hash.get("tgWebAppStartParam");
+    const wantsInstall = params.get("install") === "1" || startParam === "install";
+    const wantsPremium = params.get("premium") === "1" || startParam === "premium";
+    if (!wantsInstall && !wantsPremium) return;
     // Показываем после первого рендера: на сервере адресной строки нет
-    const id = window.setTimeout(() => setInstallOpen(true), 0);
+    const id = window.setTimeout(() => (wantsPremium ? setPremiumOpen(true) : setInstallOpen(true)), 0);
     return () => window.clearTimeout(id);
+  }, []);
+
+  // Сервер не дал добавить клиента сверх лимита Free — предлагаем Premium.
+  // На вкладке «Клиенты» об этом и так говорит баннер над списком.
+  const tabRef = useRef(tab);
+  useEffect(() => {
+    tabRef.current = tab;
+  }, [tab]);
+  useEffect(() => {
+    const onLimit = () => {
+      if (tabRef.current !== "clients") setPremiumOpen(true);
+    };
+    window.addEventListener(CLIENT_LIMIT_EVENT, onLimit);
+    return () => window.removeEventListener(CLIENT_LIMIT_EVENT, onLimit);
   }, []);
 
   const showToast = (msg: string) => {
@@ -267,7 +287,9 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
     Boolean(data.now && data.todayKey && data.activeKey && data.me) &&
     !needsRealOnboarding &&
     !onboardingPreviewOpen;
-  const sheetOpen = betaOpen || installOpen;
+  // В бете экран Premium открывается только у владельца — проверить оплату до запуска
+  const premiumVisible = premiumOpen && Boolean(data.me?.premium) && (!BETA || Boolean(data.me?.premium?.isAdmin));
+  const sheetOpen = betaOpen || installOpen || premiumVisible;
 
   // С вкладок «Финансы», «Клиенты» и «Профиль» «Назад» ведёт на главный экран,
   // а с него — закрывает мини-апп, как обычно в Telegram
@@ -341,7 +363,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
         <OnboardingFlow
           trainerName={data.me.name}
           preview={!needsRealOnboarding}
-          onBeta={() => setBetaOpen(true)}
+          onBeta={BETA ? () => setBetaOpen(true) : undefined}
           onDone={() => {
             setOnboardingPreviewOpen(false);
             // После настройки — на главный экран, а не туда, где удалили последнего клиента
@@ -390,7 +412,7 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
         : {
             eyebrow: "Профиль",
             title: me.name || "Тренер",
-            line: [me.username ? `@${me.username}` : null, `PragmaBox ${planLabel(me.subscriptionTier)}`]
+            line: [me.username ? `@${me.username}` : null, `PragmaBox ${planLabel(me.premium)}`]
               .filter(Boolean)
               .join(" · "),
           };
@@ -540,9 +562,9 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             onOpen={setOpenClientId}
             onReload={data.reload}
             onToast={showToast}
-            subscriptionTier={data.me.subscriptionTier}
-            defaultPrice={data.me.avgSessionPrice}
-            onOpenBeta={() => setBetaOpen(true)}
+            clientLimit={clientLimit(me.premium)}
+            defaultPrice={me.avgSessionPrice}
+            onOpenPremium={() => setPremiumOpen(true)}
           />
         )}
         {tab === "profile" && (
@@ -557,7 +579,9 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
             canSeed={data.clients.length === 0}
             hasDemo={hasDemo}
             onRemoveDemo={removeDemo}
-            onOpenBeta={() => setBetaOpen(true)}
+            onOpenBeta={BETA ? () => setBetaOpen(true) : undefined}
+            premium={me.premium}
+            onOpenPremium={() => setPremiumOpen(true)}
             onInstall={() => setInstallOpen(true)}
             showGuides={showGuides}
             onStartTutorial={() => {
@@ -611,6 +635,14 @@ export default function AppShell({ showGuides = false }: { showGuides?: boolean 
         onInstall={() => setInstallOpen(true)}
       />
       <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
+      <PremiumSheet
+        open={premiumVisible}
+        onClose={() => setPremiumOpen(false)}
+        premium={me.premium}
+        clientCount={data.clients.length}
+        onToast={showToast}
+        onPremium={data.setPremium}
+      />
 
       {toast && (
         <div className="pointer-events-none fixed bottom-[calc(var(--safe-bottom)+96px)] left-1/2 z-[60] -translate-x-1/2 whitespace-nowrap rounded-full bg-[#0F1C33]/90 px-4 py-2 text-sm font-medium text-white shadow-lg">

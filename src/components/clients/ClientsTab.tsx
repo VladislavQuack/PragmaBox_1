@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { ApiError, post } from "@/lib/client-api";
-import { clientLimitForTier } from "@/lib/subscription";
 import { useBackButton } from "@/lib/back-button";
+import { plural } from "@/lib/plural";
 import { debtSummary, startMs } from "@/lib/analytics";
 import { buildSeries, latestWithDelta, metricDef } from "@/lib/metrics";
 import { currentPackage } from "@/lib/packages";
@@ -33,9 +33,9 @@ export default function ClientsTab({
   onOpen,
   onReload,
   onToast,
-  subscriptionTier,
+  clientLimit,
   defaultPrice,
-  onOpenBeta,
+  onOpenPremium,
 }: {
   clients: ClientDTO[];
   history: SessionDTO[];
@@ -46,15 +46,15 @@ export default function ClientsTab({
   onOpen: (id: number) => void;
   onReload: () => void;
   onToast: (msg: string) => void;
-  subscriptionTier: string;
-  onOpenBeta: () => void;
+  // Сколько клиентов можно вести (null — без лимита: бета или Premium)
+  clientLimit: number | null;
+  onOpenPremium: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [limitPrompt, setLimitPrompt] = useState(false);
   const [busy, setBusy] = useState(false);
-  // В бете лимита нет — баннер о лимите не появится
-  const clientLimit = clientLimitForTier(subscriptionTier);
+  // В бете и с Premium лимита нет — баннер о лимите не появится
   const freeAtLimit = clientLimit !== null && clients.length >= clientLimit;
   const [form, setForm] = useState({ name: "", phone: "" });
   // Абонемент при создании — по желанию: многие клиенты платят за каждую тренировку
@@ -268,16 +268,21 @@ export default function ClientsTab({
           </button>
           <div className="relative pr-8">
             <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">Лимит Free достигнут</span>
-            <h2 className="mt-1 text-[18px] font-bold">{clientLimit} из {clientLimit} клиентов уже в базе</h2>
+            <h2 className="mt-1 text-[18px] font-bold">
+              {clientLimit !== null && clients.length > clientLimit
+                ? `В базе ${clients.length} ${plural(clients.length, "клиент", "клиента", "клиентов")}`
+                : `${clientLimit} из ${clientLimit} клиентов уже в базе`}
+            </h2>
             <p className="mt-1.5 text-[12px] leading-relaxed text-white/78">
-              Оформите Premium, чтобы добавлять клиентов без лимита и получить расширенную аналитику.
+              Бесплатно можно вести до {clientLimit} клиентов. Чтобы добавить новых, подключите Premium — все клиенты и
+              данные останутся на месте.
             </p>
             <button
               type="button"
-              onClick={onOpenBeta}
+              onClick={onOpenPremium}
               className="mt-3 rounded-full bg-white px-3.5 py-2 text-[12px] font-bold text-[#4A5BF0] transition active:scale-95"
             >
-              Оформить Premium →
+              Подключить Premium →
             </button>
           </div>
         </section>

@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { patch } from "@/lib/client-api";
 import { REFERRAL_BONUS_MONTHS, REVIEW_BONUS_MONTHS, monthsLabel } from "@/lib/beta";
 import { fmtMoney } from "@/lib/time";
+import type { PremiumInfo } from "@/lib/subscription";
 import InstallCard from "@/components/beta/InstallCard";
+import PremiumCard from "@/components/premium/PremiumCard";
 import { haptic } from "@/components/dashboard/TimelineCreator";
 
 
@@ -73,7 +75,11 @@ interface SettingsPanelProps {
   onRemoveDemo: () => void;
   // Повтор тура по приложению (сам он запускается после онбординга)
   onStartTutorial?: () => void;
+  // Экран беты — только пока идёт бета
   onOpenBeta?: () => void;
+  // Тариф и экран Premium
+  premium?: PremiumInfo;
+  onOpenPremium?: () => void;
   // Окно «Установить на главный экран»
   onInstall?: () => void;
   // Инструкции по боту и деплою видны только владельцу приложения
@@ -101,6 +107,8 @@ export default function SettingsPanel({
   onRemoveDemo,
   onStartTutorial,
   onOpenBeta,
+  premium,
+  onOpenPremium,
   onInstall,
   showGuides = false,
 }: SettingsPanelProps) {
@@ -130,6 +138,8 @@ export default function SettingsPanel({
           </span>
         </button>
       )}
+
+      {premium && onOpenPremium && <PremiumCard premium={premium} onOpen={onOpenPremium} />}
 
       {onInstall && <InstallCard onOpen={onInstall} />}
 

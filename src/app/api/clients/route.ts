@@ -11,7 +11,7 @@ import {
   toInt,
   toText,
 } from "@/lib/server/data";
-import { clientLimitForTier } from "@/lib/subscription";
+import { clientLimitForTrainer } from "@/lib/server/premium";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +38,7 @@ export function POST(req: Request) {
     }
     if (pkg && (price < 0 || price > PACKAGE_MAX_PRICE)) return badRequest("Проверьте стоимость абонемента");
 
-    const limit = clientLimitForTier(trainer.subscriptionTier);
+    const limit = await clientLimitForTrainer(trainer);
     if (limit !== null && (await countTrainerClients(trainer.id)) >= limit) {
       return clientLimitResponse(limit);
     }

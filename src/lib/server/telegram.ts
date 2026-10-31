@@ -96,13 +96,20 @@ export interface InlineButton {
 export const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-export function sendMessage(chatId: number | string, text: string, buttons?: InlineButton[][]) {
+// extra — остальные параметры sendMessage, например reply_markup с force_reply
+export function sendMessage(
+  chatId: number | string,
+  text: string,
+  buttons?: InlineButton[][],
+  extra: Record<string, unknown> = {},
+) {
   return tgCall<{ message_id: number }>("sendMessage", {
     chat_id: chatId,
     text,
     parse_mode: "HTML",
     link_preview_options: { is_disabled: true },
     ...(buttons ? { reply_markup: { inline_keyboard: buttons } } : {}),
+    ...extra,
   });
 }
 
